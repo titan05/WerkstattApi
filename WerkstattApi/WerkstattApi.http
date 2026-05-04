@@ -1,0 +1,6 @@
+@WerkstattApi_HostAddress = http://localhost:5227/api
+
+GET {{WerkstattApi_HostAddress}}/Werkstatt
+Accept: application/json
+
+###
