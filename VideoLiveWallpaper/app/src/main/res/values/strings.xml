@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Video Hintergrund</string>
+    <string name="wallpaper_label">Video Hintergrund</string>
+    <string name="wallpaper_description">Spielt deine eigenen Videos als Live-Hintergrund ab.</string>
+
+    <string name="status_active">Aktiv als Live-Hintergrund</string>
+    <string name="status_inactive">Noch nicht als Hintergrund festgelegt</string>
+    <string name="status_no_video">Noch kein Video ausgewählt</string>
+
+    <string name="section_videos">Videos</string>
+    <string name="section_display">Darstellung</string>
+    <string name="section_playback">Wiedergabe</string>
+
+    <string name="add_videos">Videos hinzufügen</string>
+    <string name="empty_videos">Noch keine Videos. Tippe auf „Videos hinzufügen“ und wähle ein oder mehrere Videos aus.</string>
+    <string name="videos_hint">Mehrere Videos werden nacheinander abgespielt. Lange drücken und ziehen ändert die Reihenfolge.</string>
+    <string name="remove_video">Video entfernen</string>
+    <string name="removed_video">%1$s entfernt</string>
+    <string name="importing">Videos werden importiert …</string>
+    <plurals name="import_failed">
+        <item quantity="one">Ein Video konnte nicht importiert werden</item>
+        <item quantity="other">%1$d Videos konnten nicht importiert werden</item>
+    </plurals>
+    <plurals name="import_done">
+        <item quantity="one">Ein Video hinzugefügt</item>
+        <item quantity="other">%1$d Videos hinzugefügt</item>
+    </plurals>
+
+    <string name="scale_mode">Bildausschnitt</string>
+    <string name="scale_crop">Füllen</string>
+    <string name="scale_fit">Einpassen</string>
+    <string name="scale_stretch">Strecken</string>
+    <string name="scale_hint">Füllen schneidet Ränder ab, Einpassen zeigt das ganze Video mit schwarzen Balken.</string>
+
+    <string name="dim">Abdunkeln</string>
+    <string name="parallax">Parallax beim Wischen</string>
+    <string name="parallax_hint">Der Ausschnitt wandert mit, wenn du zwischen den Startbildschirmen wischst.</string>
+
+    <string name="sound">Ton abspielen</string>
+    <string name="sound_hint">Achtung: Der Ton läuft, solange der Startbildschirm sichtbar ist.</string>
+    <string name="volume">Lautstärke</string>
+    <string name="speed">Geschwindigkeit</string>
+    <string name="shuffle">Zufällige Reihenfolge</string>
+    <string name="battery_saver">Im Energiesparmodus Standbild zeigen</string>
+
+    <string name="set_wallpaper">Als Hintergrund festlegen</string>
+    <string name="set_wallpaper_failed">Auswahl für Live-Hintergründe konnte nicht geöffnet werden</string>
+    <string name="need_video_first">Bitte zuerst ein Video hinzufügen</string>
+
+    <string name="footer_hint">Die Videos werden in die App kopiert, damit der Hintergrund auch nach einem Neustart funktioniert. Die Wiedergabe pausiert automatisch, sobald der Startbildschirm nicht sichtbar ist.</string>
+
+    <string name="orientation_landscape">Querformat</string>
+    <string name="orientation_portrait">Hochformat</string>
+    <string name="orientation_square">Quadratisch</string>
+    <string name="orientation_unknown">Video</string>
+
+    <string name="percent_value">%1$d %%</string>
+    <string name="speed_value">%1$s×</string>
+</resources>

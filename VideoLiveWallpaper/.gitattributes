@@ -1,0 +1,7 @@
+# Binaerdateien nie umkodieren
+*.apk binary
+*.jar binary
+
+# Der Gradle-Starter braucht LF, das Windows-Pendant CRLF
+gradlew text eol=lf
+*.bat text eol=crlf
