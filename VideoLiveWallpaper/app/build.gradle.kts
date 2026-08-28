@@ -11,17 +11,33 @@ android {
         applicationId = "com.livewallpaper.video"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
+    }
+
+    // Fester Signaturschluessel im Projekt: nur so laesst sich eine neue Version
+    // ueber eine bereits installierte druebersetzen, egal auf welchem Rechner
+    // gebaut wird. Es ist ein Android-Debug-Schluessel mit dem ueblichen
+    // Standardpasswort - kein Geheimnis und nicht fuer den Play Store geeignet.
+    val projectKeystore = rootProject.file("keystore/debug.keystore")
+
+    signingConfigs {
+        if (projectKeystore.exists()) {
+            create("shared") {
+                storeFile = projectKeystore
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Signiert mit dem Debug-Key, damit die APK ohne eigenen Keystore
-            // direkt auf dem Geraet installiert werden kann.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("shared")
+                ?: signingConfigs.getByName("debug")
         }
     }
 

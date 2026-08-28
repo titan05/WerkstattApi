@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     private val speedFormat = DecimalFormat("0.##", DecimalFormatSymbols(Locale.GERMANY))
 
     private var videos = mutableListOf<VideoItem>()
-    private var settings = Settings(ScaleMode.CROP, false, 60, 0, true, 1f, false, true)
+    private var settings = Prefs.defaults()
 
     /** Verhindert, dass das Befuellen der Bedienelemente sofort wieder speichert. */
     private var updatingUi = false
@@ -140,6 +140,15 @@ class MainActivity : AppCompatActivity() {
         binding.soundSwitch.isChecked = settings.soundEnabled
         binding.shuffleSwitch.isChecked = settings.shuffle
         binding.batterySwitch.isChecked = settings.batterySaver
+        binding.freezeSlider.value = settings.freezeAfterSeconds.toFloat()
+        binding.stillBelowSlider.value = settings.stillBelowPercent.toFloat()
+        binding.fpsGroup.check(
+            when (settings.maxFps) {
+                24 -> R.id.fps24
+                30 -> R.id.fps30
+                else -> R.id.fpsFull
+            }
+        )
         updatingUi = false
 
         updateValueLabels()
@@ -207,6 +216,29 @@ class MainActivity : AppCompatActivity() {
             settings = settings.copy(batterySaver = checked)
             if (!updatingUi) Prefs.get(this).edit { putBoolean(Prefs.KEY_BATTERY, checked) }
         }
+
+        binding.freezeSlider.addOnChangeListener { _, value, _ ->
+            settings = settings.copy(freezeAfterSeconds = value.toInt())
+            updateValueLabels()
+            if (!updatingUi) Prefs.get(this).edit { putInt(Prefs.KEY_FREEZE, value.toInt()) }
+        }
+
+        binding.stillBelowSlider.addOnChangeListener { _, value, _ ->
+            settings = settings.copy(stillBelowPercent = value.toInt())
+            updateValueLabels()
+            if (!updatingUi) Prefs.get(this).edit { putInt(Prefs.KEY_STILL_BELOW, value.toInt()) }
+        }
+
+        binding.fpsGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked || updatingUi) return@addOnButtonCheckedListener
+            val fps = when (checkedId) {
+                R.id.fps24 -> 24
+                R.id.fps30 -> 30
+                else -> 0
+            }
+            settings = settings.copy(maxFps = fps)
+            Prefs.get(this).edit { putInt(Prefs.KEY_MAX_FPS, fps) }
+        }
     }
 
     // --- Videos ---------------------------------------------------------------
@@ -258,6 +290,16 @@ class MainActivity : AppCompatActivity() {
         binding.volumeValue.text = getString(R.string.percent_value, settings.volume)
         binding.speedValue.text =
             getString(R.string.speed_value, speedFormat.format(settings.speed.toDouble()))
+        binding.freezeValue.text = if (settings.freezeAfterSeconds <= 0) {
+            getString(R.string.value_off)
+        } else {
+            getString(R.string.seconds_value, settings.freezeAfterSeconds)
+        }
+        binding.stillBelowValue.text = if (settings.stillBelowPercent <= 0) {
+            getString(R.string.value_off)
+        } else {
+            getString(R.string.percent_value, settings.stillBelowPercent)
+        }
         val soundOn = binding.soundSwitch.isChecked
         binding.volumeRow.visibility = if (soundOn) View.VISIBLE else View.GONE
         binding.volumeSlider.visibility = if (soundOn) View.VISIBLE else View.GONE

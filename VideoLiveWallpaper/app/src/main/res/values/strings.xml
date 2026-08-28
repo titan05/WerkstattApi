@@ -11,6 +11,7 @@
     <string name="section_videos">Videos</string>
     <string name="section_display">Darstellung</string>
     <string name="section_playback">Wiedergabe</string>
+    <string name="section_battery">Akku</string>
 
     <string name="add_videos">Videos hinzufügen</string>
     <string name="empty_videos">Noch keine Videos. Tippe auf „Videos hinzufügen“ und wähle ein oder mehrere Videos aus.</string>
@@ -43,6 +44,18 @@
     <string name="speed">Geschwindigkeit</string>
     <string name="shuffle">Zufällige Reihenfolge</string>
     <string name="battery_saver">Im Energiesparmodus Standbild zeigen</string>
+    <string name="battery_intro">Ein laufendes Video ist der teuerste Hintergrund-Typ. Diese drei Einstellungen bremsen ihn spürbar, ohne dass er statisch wirkt.</string>
+    <string name="freeze">Einfrieren nach</string>
+    <string name="freeze_hint">Das Video läuft bei jedem Blick auf den Startbildschirm los und friert dann als Standbild ein. Decoder und Grafikeinheit schlafen danach komplett.</string>
+    <string name="max_fps">Bildrate begrenzen</string>
+    <string name="fps_full">Voll</string>
+    <string name="fps_30">30 fps</string>
+    <string name="fps_24">24 fps</string>
+    <string name="fps_hint">Jedes ausgelassene Bild spart einen kompletten Zeichen- und Anzeigedurchlauf. Bei 30-fps-Videos ist kein Unterschied sichtbar.</string>
+    <string name="still_below">Standbild ab Akkustand</string>
+    <string name="still_below_hint">Gilt nur ohne Ladekabel.</string>
+    <string name="value_off">Aus</string>
+    <string name="seconds_value">%1$d s</string>
 
     <string name="set_wallpaper">Als Hintergrund festlegen</string>
     <string name="set_wallpaper_failed">Auswahl für Live-Hintergründe konnte nicht geöffnet werden</string>

@@ -59,7 +59,13 @@ data class Settings(
     val parallax: Boolean,
     val speed: Float,
     val shuffle: Boolean,
-    val batterySaver: Boolean
+    val batterySaver: Boolean,
+    /** Nach so vielen Sekunden Sichtbarkeit einfrieren, 0 = nie. */
+    val freezeAfterSeconds: Int,
+    /** Obergrenze fuer gezeichnete Bilder pro Sekunde, 0 = unbegrenzt. */
+    val maxFps: Int,
+    /** Unter diesem Akkustand nur ein Standbild zeigen, 0 = aus. */
+    val stillBelowPercent: Int
 )
 
 object Prefs {
@@ -74,21 +80,43 @@ object Prefs {
     const val KEY_SPEED = "speed"
     const val KEY_SHUFFLE = "shuffle"
     const val KEY_BATTERY = "battery_saver"
+    const val KEY_FREEZE = "freeze_after_seconds"
+    const val KEY_MAX_FPS = "max_fps"
+    const val KEY_STILL_BELOW = "still_below_percent"
 
     fun get(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
+    /** Werkseinstellungen - bewusst schon akkuschonend. */
+    fun defaults(): Settings = Settings(
+        scaleMode = ScaleMode.CROP,
+        soundEnabled = false,
+        volume = 60,
+        dim = 0,
+        parallax = true,
+        speed = 1f,
+        shuffle = false,
+        batterySaver = true,
+        freezeAfterSeconds = 15,
+        maxFps = 30,
+        stillBelowPercent = 15
+    )
+
     fun readSettings(context: Context): Settings {
         val p = get(context)
+        val d = defaults()
         return Settings(
-            scaleMode = ScaleMode.fromName(p.getString(KEY_SCALE, ScaleMode.CROP.name)),
-            soundEnabled = p.getBoolean(KEY_SOUND, false),
-            volume = p.getInt(KEY_VOLUME, 60).coerceIn(0, 100),
-            dim = p.getInt(KEY_DIM, 0).coerceIn(0, 80),
-            parallax = p.getBoolean(KEY_PARALLAX, true),
-            speed = p.getFloat(KEY_SPEED, 1f).coerceIn(0.25f, 2f),
-            shuffle = p.getBoolean(KEY_SHUFFLE, false),
-            batterySaver = p.getBoolean(KEY_BATTERY, true)
+            scaleMode = ScaleMode.fromName(p.getString(KEY_SCALE, d.scaleMode.name)),
+            soundEnabled = p.getBoolean(KEY_SOUND, d.soundEnabled),
+            volume = p.getInt(KEY_VOLUME, d.volume).coerceIn(0, 100),
+            dim = p.getInt(KEY_DIM, d.dim).coerceIn(0, 80),
+            parallax = p.getBoolean(KEY_PARALLAX, d.parallax),
+            speed = p.getFloat(KEY_SPEED, d.speed).coerceIn(0.25f, 2f),
+            shuffle = p.getBoolean(KEY_SHUFFLE, d.shuffle),
+            batterySaver = p.getBoolean(KEY_BATTERY, d.batterySaver),
+            freezeAfterSeconds = p.getInt(KEY_FREEZE, d.freezeAfterSeconds).coerceIn(0, 60),
+            maxFps = p.getInt(KEY_MAX_FPS, d.maxFps).coerceIn(0, 120),
+            stillBelowPercent = p.getInt(KEY_STILL_BELOW, d.stillBelowPercent).coerceIn(0, 50)
         )
     }
 

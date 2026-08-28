@@ -67,6 +67,8 @@ class VideoRenderer(private val listener: Listener) {
     private var dim = 0f
 
     private var hasFrame = false
+    private var minFrameIntervalNanos = 0L
+    private var lastDrawNanos = 0L
     @Volatile
     private var released = false
 
@@ -86,7 +88,7 @@ class VideoRenderer(private val listener: Listener) {
                 initGl()
                 Matrix.setIdentityM(stMatrix, 0)
                 updateMatrix()
-                drawFrame(false)
+                drawFrame()
                 videoSurface?.let { listener.onVideoSurfaceReady(this, it) }
             } catch (e: Exception) {
                 Log.e(TAG, "GL-Initialisierung fehlgeschlagen", e)
@@ -100,7 +102,7 @@ class VideoRenderer(private val listener: Listener) {
         viewWidth = width
         viewHeight = height
         updateMatrix()
-        drawFrame(false)
+        drawFrame()
     }
 
     fun setVideoAspect(aspect: Float) = handler.post {
@@ -108,7 +110,7 @@ class VideoRenderer(private val listener: Listener) {
         if (videoAspect != aspect) {
             videoAspect = aspect
             updateMatrix()
-            drawFrame(false)
+            drawFrame()
         }
     }
 
@@ -117,8 +119,9 @@ class VideoRenderer(private val listener: Listener) {
         scaleMode = settings.scaleMode
         parallax = settings.parallax
         dim = settings.dim / 100f
+        minFrameIntervalNanos = PowerRules.minFrameIntervalNanos(settings.maxFps)
         updateMatrix()
-        drawFrame(false)
+        drawFrame()
     }
 
     fun setXOffset(offset: Float) = handler.post {
@@ -127,7 +130,7 @@ class VideoRenderer(private val listener: Listener) {
         if (clamped != xOffset) {
             xOffset = clamped
             updateMatrix()
-            drawFrame(false)
+            drawFrame()
         }
     }
 
@@ -135,7 +138,7 @@ class VideoRenderer(private val listener: Listener) {
     fun clearFrame() = handler.post {
         if (released) return@post
         hasFrame = false
-        drawFrame(false)
+        drawFrame()
     }
 
     fun release() {
@@ -221,26 +224,35 @@ class VideoRenderer(private val listener: Listener) {
         videoSurface = Surface(texture)
     }
 
+    /**
+     * Ein neues Bild liegt bereit. Der Puffer wird immer abgeholt - sonst
+     * blockiert der Decoder - gezeichnet wird aber hoechstens mit der
+     * eingestellten Bildrate. Jedes ausgelassene Bild spart einen kompletten
+     * GPU- und Anzeige-Durchlauf.
+     */
     private fun onFrameAvailable() {
-        if (released || eglSurface == EGL14.EGL_NO_SURFACE) return
-        hasFrame = true
-        drawFrame(true)
-    }
-
-    private fun drawFrame(updateTexture: Boolean) {
         if (released || eglSurface == EGL14.EGL_NO_SURFACE) return
         if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) return
 
-        if (updateTexture) {
-            val texture = surfaceTexture ?: return
-            try {
-                texture.updateTexImage()
-                texture.getTransformMatrix(stMatrix)
-            } catch (e: RuntimeException) {
-                Log.w(TAG, "updateTexImage fehlgeschlagen", e)
-                return
-            }
+        val texture = surfaceTexture ?: return
+        try {
+            texture.updateTexImage()
+            texture.getTransformMatrix(stMatrix)
+        } catch (e: RuntimeException) {
+            Log.w(TAG, "updateTexImage fehlgeschlagen", e)
+            return
         }
+        hasFrame = true
+
+        val now = System.nanoTime()
+        if (minFrameIntervalNanos > 0L && now - lastDrawNanos < minFrameIntervalNanos) return
+        lastDrawNanos = now
+        drawFrame()
+    }
+
+    private fun drawFrame() {
+        if (released || eglSurface == EGL14.EGL_NO_SURFACE) return
+        if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) return
 
         GLES20.glViewport(0, 0, viewWidth, viewHeight)
         GLES20.glClearColor(BG_GREY, BG_GREY, BG_GREY, 1f)

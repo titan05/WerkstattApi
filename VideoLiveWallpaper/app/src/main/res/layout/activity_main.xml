@@ -315,10 +315,134 @@
                             android:layout_height="wrap_content" />
                     </LinearLayout>
 
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Akku -->
+            <com.google.android.material.card.MaterialCardView style="@style/SettingsCard">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        style="@style/SectionTitle"
+                        android:text="@string/section_battery" />
+
+                    <TextView
+                        style="@style/HintText"
+                        android:layout_marginBottom="14dp"
+                        android:text="@string/battery_intro" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/RowLabel"
+                            android:text="@string/freeze" />
+
+                        <TextView
+                            android:id="@+id/freezeValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    </LinearLayout>
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/freezeSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:stepSize="5"
+                        android:valueFrom="0"
+                        android:valueTo="60"
+                        app:labelBehavior="gone" />
+
+                    <TextView
+                        style="@style/HintText"
+                        android:text="@string/freeze_hint" />
+
+                    <TextView
+                        style="@style/RowLabel"
+                        android:layout_width="match_parent"
+                        android:layout_marginTop="18dp"
+                        android:text="@string/max_fps" />
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/fpsGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
+                        app:selectionRequired="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/fpsFull"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/fps_full" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/fps30"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/fps_30" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/fps24"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/fps_24" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <TextView
+                        style="@style/HintText"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/fps_hint" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/RowLabel"
+                            android:text="@string/still_below" />
+
+                        <TextView
+                            android:id="@+id/stillBelowValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    </LinearLayout>
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/stillBelowSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:stepSize="5"
+                        android:valueFrom="0"
+                        android:valueTo="50"
+                        app:labelBehavior="gone" />
+
+                    <TextView
+                        style="@style/HintText"
+                        android:text="@string/still_below_hint" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 

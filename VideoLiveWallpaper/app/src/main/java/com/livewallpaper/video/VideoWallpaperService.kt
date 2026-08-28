@@ -7,6 +7,7 @@ import android.media.MediaPlayer
 import android.media.PlaybackParams
 import android.os.Handler
 import android.os.Looper
+import android.os.BatteryManager
 import android.os.PowerManager
 import android.service.wallpaper.WallpaperService
 import android.util.Log
@@ -30,6 +31,17 @@ class VideoWallpaperService : WallpaperService() {
 
         private val mainHandler = Handler(Looper.getMainLooper())
         private val powerManager by lazy { getSystemService(Context.POWER_SERVICE) as PowerManager }
+        private val batteryManager by lazy {
+            getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        }
+
+        /** Haelt das Video an, sobald es lange genug gelaufen ist. */
+        private val freezeRunnable = Runnable {
+            val mediaPlayer = player
+            if (mediaPlayer != null && isPrepared) {
+                runCatching { if (mediaPlayer.isPlaying) mediaPlayer.pause() }
+            }
+        }
 
         private var renderer: VideoRenderer? = null
         private var player: MediaPlayer? = null
@@ -51,6 +63,8 @@ class VideoWallpaperService : WallpaperService() {
         override fun onCreate(surfaceHolder: SurfaceHolder) {
             super.onCreate(surfaceHolder)
             setTouchEventsEnabled(false)
+            // Ohne Parallax braucht der Dienst die Wisch-Meldungen des Launchers nicht.
+            setOffsetNotificationsEnabled(settings.parallax)
             playlist = Prefs.readVideos(this@VideoWallpaperService)
             buildOrder()
             Prefs.get(this@VideoWallpaperService).registerOnSharedPreferenceChangeListener(this)
@@ -91,9 +105,10 @@ class VideoWallpaperService : WallpaperService() {
         override fun onVisibilityChanged(visible: Boolean) {
             isVisible = visible
             if (visible) {
-                stillOnly = settings.batterySaver && powerManager.isPowerSaveMode
+                stillOnly = shouldShowStillOnly()
                 resumePlayback()
             } else {
+                mainHandler.removeCallbacks(freezeRunnable)
                 pausePlayback()
             }
         }
@@ -125,9 +140,13 @@ class VideoWallpaperService : WallpaperService() {
             val playlistChanged = newPlaylist.map { it.id } != playlist.map { it.id }
             val orderChanged = newSettings.shuffle != settings.shuffle
 
+            val freezeChanged = newSettings.freezeAfterSeconds != settings.freezeAfterSeconds
+            val parallaxChanged = newSettings.parallax != settings.parallax
+
             settings = newSettings
             playlist = newPlaylist
             renderer?.applySettings(newSettings)
+            if (parallaxChanged) setOffsetNotificationsEnabled(newSettings.parallax)
 
             when {
                 playlistChanged -> {
@@ -142,6 +161,7 @@ class VideoWallpaperService : WallpaperService() {
                 else -> {
                     applyVolume()
                     applySpeed()
+                    if (freezeChanged && isVisible && !stillOnly) resumePlayback()
                 }
             }
         }
@@ -244,7 +264,31 @@ class VideoWallpaperService : WallpaperService() {
             applySpeedTo(mediaPlayer)
             runCatching { mediaPlayer.start() }
                 .onFailure { Log.w(TAG, "start() fehlgeschlagen", it) }
+            scheduleFreeze()
         }
+
+        /**
+         * Plant das Einfrieren des Videos. Der Startbildschirm ist meist nur ein
+         * paar Sekunden zu sehen - danach reicht ein Standbild, und Decoder wie
+         * Grafikeinheit koennen komplett schlafen.
+         */
+        private fun scheduleFreeze() {
+            mainHandler.removeCallbacks(freezeRunnable)
+            val seconds = settings.freezeAfterSeconds
+            if (seconds > 0 && !stillOnly) {
+                mainHandler.postDelayed(freezeRunnable, seconds * 1000L)
+            }
+        }
+
+        private fun shouldShowStillOnly(): Boolean = PowerRules.stillImageOnly(
+            powerSaveOptionEnabled = settings.batterySaver,
+            powerSaveActive = runCatching { powerManager.isPowerSaveMode }.getOrDefault(false),
+            thresholdPercent = settings.stillBelowPercent,
+            batteryPercent = runCatching {
+                batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+            }.getOrDefault(-1),
+            charging = runCatching { batteryManager.isCharging }.getOrDefault(false)
+        )
 
         private fun resumePlayback() {
             val mediaPlayer = player
@@ -258,7 +302,7 @@ class VideoWallpaperService : WallpaperService() {
                 if (!stillFrameShown && !mediaPlayer.isPlaying) startPlayer(mediaPlayer)
                 return
             }
-            if (!mediaPlayer.isPlaying) startPlayer(mediaPlayer)
+            if (mediaPlayer.isPlaying) scheduleFreeze() else startPlayer(mediaPlayer)
         }
 
         private fun pausePlayback() {
@@ -288,6 +332,7 @@ class VideoWallpaperService : WallpaperService() {
         }
 
         private fun releasePlayer() {
+            mainHandler.removeCallbacks(freezeRunnable)
             val mediaPlayer = player ?: return
             player = null
             isPrepared = false
