@@ -13,8 +13,34 @@
     <string name="section_playback">Wiedergabe</string>
     <string name="section_battery">Akku</string>
 
-    <string name="add_videos">Videos hinzufügen</string>
-    <string name="empty_videos">Noch keine Videos. Tippe auf „Videos hinzufügen“ und wähle ein oder mehrere Videos aus.</string>
+    <string name="add_videos">Videos auswählen</string>
+    <string name="add_from_link">Von Link laden</string>
+    <string name="link_dialog_title">Video-Link</string>
+    <string name="link_hint">https://…/video.mp4</string>
+    <string name="link_dialog_hint">Direkter Link auf eine Videodatei. Links auf YouTube, TikTok &amp; Co. sind Webseiten und enthalten keine Videodatei – die funktionieren nicht.</string>
+    <string name="load">Laden</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="understood">Verstanden</string>
+    <string name="streaming_title">%1$s-Links funktionieren nicht</string>
+    <string name="streaming_message">%1$s liefert keine Videodatei aus, sondern nur eine Webseite mit eigenem Player. Den Stream daraus herauszulösen verbieten die Nutzungsbedingungen, deshalb kann die App das nicht.
+
+Das geht stattdessen:
+
+•  Eigene Uploads beim Portal selbst herunterladen (bei YouTube über YouTube Studio) und dann mit „Videos auswählen“ hinzufügen
+•  Direkte Links auf eine Videodatei (endet z. B. auf .mp4), etwa von kostenlosen Stock-Video-Seiten
+•  Jedes Video, das schon auf dem Handy liegt</string>
+    <string name="url_cleartext">Nur verschlüsselte Links (https) werden geladen.</string>
+    <string name="url_invalid">Das sieht nicht nach einer Web-Adresse aus.</string>
+    <string name="downloading">Video wird geladen …</string>
+    <string name="download_progress">%1$s von %2$s</string>
+    <string name="download_progress_unknown">%1$s geladen</string>
+    <string name="download_failed_network">Der Link konnte nicht geladen werden. Erreichbar?</string>
+    <string name="download_failed_forbidden">Der Server verweigert den direkten Zugriff (Schutz gegen Verlinken). Lade das Video im Browser herunter und füge es mit „Videos auswählen“ hinzu.</string>
+    <string name="download_failed_not_found">Unter diesem Link liegt nichts.</string>
+    <string name="download_failed_not_video">Hinter dem Link steckt keine abspielbare Videodatei.</string>
+    <string name="download_failed_too_large">Das Video ist größer als 500 MB.</string>
+    <string name="download_cancelled">Download abgebrochen</string>
+    <string name="empty_videos">Noch keine Videos. Wähle Videos vom Gerät aus oder lade eines über einen direkten Link.</string>
     <string name="videos_hint">Mehrere Videos werden nacheinander abgespielt. Lange drücken und ziehen ändert die Reihenfolge.</string>
     <string name="remove_video">Video entfernen</string>
     <string name="removed_video">%1$s entfernt</string>

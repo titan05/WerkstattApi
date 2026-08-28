@@ -2,7 +2,9 @@ package com.livewallpaper.video
 
 import android.app.WallpaperManager
 import android.content.ActivityNotFoundException
+import android.content.ClipboardManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -10,6 +12,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import androidx.core.view.ViewCompat
@@ -18,7 +21,9 @@ import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textfield.TextInputEditText
 import com.livewallpaper.video.databinding.ActivityMainBinding
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
@@ -43,6 +48,10 @@ class MainActivity : AppCompatActivity() {
 
     /** Verhindert, dass das Befuellen der Bedienelemente sofort wieder speichert. */
     private var updatingUi = false
+
+    /** Vom Hauptthread gesetzt, vom Ladethread gelesen. */
+    @Volatile
+    private var downloadCancelled = false
 
     private val pickVideos = registerForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
@@ -159,6 +168,13 @@ class MainActivity : AppCompatActivity() {
             pickVideos.launch(arrayOf("video/*"))
         }
 
+        binding.linkButton.setOnClickListener { showUrlDialog() }
+
+        binding.progressCancel.setOnClickListener {
+            downloadCancelled = true
+            binding.progressCancel.isEnabled = false
+        }
+
         binding.setWallpaperButton.setOnClickListener {
             if (videos.isEmpty()) {
                 snack(getString(R.string.need_video_first))
@@ -244,7 +260,7 @@ class MainActivity : AppCompatActivity() {
     // --- Videos ---------------------------------------------------------------
 
     private fun importVideos(uris: List<Uri>) {
-        binding.progressOverlay.visibility = View.VISIBLE
+        showProgress(R.string.importing, cancellable = false)
         importExecutor.execute {
             val imported = mutableListOf<VideoItem>()
             var failed = 0
@@ -254,7 +270,7 @@ class MainActivity : AppCompatActivity() {
             }
             val failures = failed
             mainHandler.post {
-                binding.progressOverlay.visibility = View.GONE
+                hideProgress()
                 if (imported.isNotEmpty()) {
                     videos.addAll(imported)
                     Prefs.writeVideos(this, videos)
@@ -268,6 +284,111 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    // --- Von einer Adresse laden ---------------------------------------------
+
+    private fun showUrlDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_url, null)
+        val input = view.findViewById<TextInputEditText>(R.id.urlInput)
+        clipboardUrl()?.let { input.setText(it) }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.link_dialog_title)
+            .setView(view)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.load) { _, _ ->
+                handleUrl(input.text?.toString().orEmpty())
+            }
+            .show()
+    }
+
+    private fun handleUrl(raw: String) {
+        when (val check = VideoUrlRules.check(raw)) {
+            is UrlCheck.Ok -> downloadFromUrl(check.url)
+            is UrlCheck.Streaming -> showStreamingInfo(check.service)
+            UrlCheck.Cleartext -> snack(getString(R.string.url_cleartext))
+            UrlCheck.Empty, UrlCheck.Invalid -> snack(getString(R.string.url_invalid))
+        }
+    }
+
+    /** Erklaert, warum ein Portal-Link nicht funktioniert, und was stattdessen geht. */
+    private fun showStreamingInfo(service: String) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.streaming_title, service))
+            .setMessage(getString(R.string.streaming_message, service))
+            .setPositiveButton(R.string.understood, null)
+            .show()
+    }
+
+    private fun downloadFromUrl(url: String) {
+        downloadCancelled = false
+        showProgress(R.string.downloading, cancellable = true)
+        importExecutor.execute {
+            val result = VideoImporter.importFromUrl(
+                context = this,
+                url = url,
+                onProgress = { loaded, total -> mainHandler.post { updateProgress(loaded, total) } },
+                isCancelled = { downloadCancelled }
+            )
+            mainHandler.post {
+                hideProgress()
+                when (result) {
+                    is UrlImportResult.Success -> {
+                        videos.add(result.item)
+                        Prefs.writeVideos(this, videos)
+                        adapter.submit(videos)
+                        updateVideoViews()
+                        snack(resources.getQuantityString(R.plurals.import_done, 1, 1))
+                    }
+
+                    is UrlImportResult.Failure -> snack(getString(messageFor(result.error)))
+                }
+            }
+        }
+    }
+
+    @StringRes
+    private fun messageFor(error: UrlImportResult.Error): Int = when (error) {
+        UrlImportResult.Error.NETWORK -> R.string.download_failed_network
+        UrlImportResult.Error.FORBIDDEN -> R.string.download_failed_forbidden
+        UrlImportResult.Error.NOT_FOUND -> R.string.download_failed_not_found
+        UrlImportResult.Error.NOT_A_VIDEO -> R.string.download_failed_not_video
+        UrlImportResult.Error.TOO_LARGE -> R.string.download_failed_too_large
+        UrlImportResult.Error.CANCELLED -> R.string.download_cancelled
+    }
+
+    private fun clipboardUrl(): String? {
+        val manager = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return null
+        val clip = manager.primaryClip ?: return null
+        if (clip.itemCount == 0) return null
+        val text = clip.getItemAt(0)?.coerceToText(this)?.toString()?.trim() ?: return null
+        return text.takeIf { it.startsWith("http://", true) || it.startsWith("https://", true) }
+    }
+
+    private fun showProgress(@StringRes labelRes: Int, cancellable: Boolean) {
+        binding.progressLabel.setText(labelRes)
+        binding.progressDetail.text = ""
+        binding.progressDetail.visibility = View.GONE
+        binding.progressCancel.isEnabled = true
+        binding.progressCancel.visibility = if (cancellable) View.VISIBLE else View.GONE
+        binding.progressOverlay.visibility = View.VISIBLE
+    }
+
+    private fun hideProgress() {
+        binding.progressOverlay.visibility = View.GONE
+    }
+
+    private fun updateProgress(loadedBytes: Long, totalBytes: Long) {
+        binding.progressDetail.visibility = View.VISIBLE
+        binding.progressDetail.text = if (totalBytes > 0) {
+            getString(R.string.download_progress, megabytes(loadedBytes), megabytes(totalBytes))
+        } else {
+            getString(R.string.download_progress_unknown, megabytes(loadedBytes))
+        }
+    }
+
+    private fun megabytes(bytes: Long): String =
+        String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024.0))
 
     private fun removeVideo(item: VideoItem) {
         videos.remove(item)
