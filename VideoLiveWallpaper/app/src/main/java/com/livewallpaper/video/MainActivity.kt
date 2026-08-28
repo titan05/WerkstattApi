@@ -14,6 +14,7 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.IntentCompat
 import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -53,6 +54,9 @@ class MainActivity : AppCompatActivity() {
     @Volatile
     private var downloadCancelled = false
 
+    /** Geteiltes Video wurde schon uebernommen - nicht nach Drehen erneut. */
+    private var shareHandled = false
+
     private val pickVideos = registerForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
     ) { uris -> if (uris.isNotEmpty()) importVideos(uris) }
@@ -75,6 +79,43 @@ class MainActivity : AppCompatActivity() {
         // Reste frueherer Importe aufraeumen (z.B. nach einem Abbruch).
         val known = videos.toList()
         importExecutor.execute { Storage.cleanUp(this, known) }
+
+        shareHandled = savedInstanceState?.getBoolean(STATE_SHARE_HANDLED) == true
+        if (!shareHandled) handleShareIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShareIntent(intent)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(STATE_SHARE_HANDLED, shareHandled)
+    }
+
+    /** Nimmt Videos entgegen, die aus einer anderen App geteilt wurden. */
+    private fun handleShareIntent(intent: Intent?) {
+        if (intent == null) return
+        val uris = when (intent.action) {
+            Intent.ACTION_SEND -> listOfNotNull(
+                IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+            )
+
+            Intent.ACTION_SEND_MULTIPLE -> IntentCompat
+                .getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+                .orEmpty()
+
+            else -> return
+        }
+
+        shareHandled = true
+        if (uris.isEmpty()) {
+            snack(getString(R.string.shared_no_video))
+        } else {
+            importVideos(uris)
+        }
     }
 
     override fun onResume() {
@@ -315,10 +356,20 @@ class MainActivity : AppCompatActivity() {
     private fun showStreamingInfo(service: String) {
         MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.streaming_title, service))
-            .setMessage(getString(R.string.streaming_message, service))
+            .setMessage(getString(R.string.streaming_message, service, ownContentHint(service)))
             .setPositiveButton(R.string.understood, null)
             .show()
     }
+
+    /** Wie man an die eigenen Videos des jeweiligen Portals kommt. */
+    private fun ownContentHint(service: String): String = getString(
+        when (service) {
+            "YouTube" -> R.string.own_hint_youtube
+            "Instagram" -> R.string.own_hint_instagram
+            "TikTok" -> R.string.own_hint_tiktok
+            else -> R.string.own_hint_generic
+        }
+    )
 
     private fun downloadFromUrl(url: String) {
         downloadCancelled = false
@@ -455,5 +506,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun snack(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
+    }
+
+    private companion object {
+        const val STATE_SHARE_HANDLED = "share_handled"
     }
 }

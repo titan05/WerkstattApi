@@ -22,13 +22,12 @@
     <string name="cancel">Abbrechen</string>
     <string name="understood">Verstanden</string>
     <string name="streaming_title">%1$s-Links funktionieren nicht</string>
-    <string name="streaming_message">%1$s liefert keine Videodatei aus, sondern nur eine Webseite mit eigenem Player. Den Stream daraus herauszulösen verbieten die Nutzungsbedingungen, deshalb kann die App das nicht.
-
-Das geht stattdessen:
-
-•  Eigene Uploads beim Portal selbst herunterladen (bei YouTube über YouTube Studio) und dann mit „Videos auswählen“ hinzufügen
-•  Direkte Links auf eine Videodatei (endet z. B. auf .mp4), etwa von kostenlosen Stock-Video-Seiten
-•  Jedes Video, das schon auf dem Handy liegt</string>
+    <string name="streaming_message">%1$s liefert keine Videodatei aus, sondern nur eine Webseite mit eigenem Player. Den Stream daraus herauszulösen verbieten die Nutzungsbedingungen, deshalb kann die App das nicht.\n\nDas geht stattdessen:\n\n•  %2$s\n•  Direkte Links auf eine Videodatei (endet z. B. auf .mp4), etwa von kostenlosen Stock-Video-Seiten\n•  Jedes Video, das schon auf dem Handy liegt – auch über „Teilen“ aus einer anderen App</string>
+    <string name="own_hint_youtube">Eigene Uploads über YouTube Studio herunterladen und dann mit „Videos auswählen“ hinzufügen</string>
+    <string name="own_hint_instagram">Eigene Videos bei Instagram anfordern: Konten-Center → „Deine Informationen und Berechtigungen“ → Informationen herunterladen. Das Archiv entpacken und die Datei mit „Videos auswählen“ hinzufügen</string>
+    <string name="own_hint_tiktok">Eigene Videos in TikTok auf dem Gerät speichern und dann mit „Videos auswählen“ hinzufügen</string>
+    <string name="own_hint_generic">Eigene Uploads beim Portal selbst herunterladen und dann mit „Videos auswählen“ hinzufügen</string>
+    <string name="shared_no_video">Damit kann die App nichts anfangen – bitte ein Video teilen.</string>
     <string name="url_cleartext">Nur verschlüsselte Links (https) werden geladen.</string>
     <string name="url_invalid">Das sieht nicht nach einer Web-Adresse aus.</string>
     <string name="downloading">Video wird geladen …</string>

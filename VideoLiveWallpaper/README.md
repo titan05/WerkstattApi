@@ -2,11 +2,11 @@
 
 Eine kleine Android-App, mit der eigene Videos als Live-Hintergrund laufen.
 
-**Fertige App:** [`dist/VideoHintergrund-1.2.apk`](dist/VideoHintergrund-1.2.apk)
+**Fertige App:** [`dist/VideoHintergrund-1.3.apk`](dist/VideoHintergrund-1.3.apk)
 
 ## Installieren
 
-1. Die Datei `dist/VideoHintergrund-1.2.apk` auf das Handy kopieren (USB, Cloud, E‑Mail …).
+1. Die Datei `dist/VideoHintergrund-1.3.apk` auf das Handy kopieren (USB, Cloud, E‑Mail …).
 2. Im Dateimanager antippen. Android fragt einmalig nach der Erlaubnis
    „Unbekannte Apps installieren“ für den Dateimanager – erlauben.
 3. Installieren, App „Video Hintergrund“ öffnen.
@@ -18,10 +18,14 @@ Rechner gebaut wurde. Für den Play Store ist so ein Schlüssel nicht geeignet.
 
 ## Benutzen
 
-1. **Videos auswählen** – ein oder mehrere Videos vom Gerät. Alternativ
-   **Von Link laden** für einen direkten Link auf eine Videodatei. In beiden
-   Fällen landet das Video im App-Speicher, damit der Hintergrund auch nach
-   einem Neustart und unabhängig vom Original weiterläuft.
+1. Videos hinzufügen – auf drei Wegen:
+   * **Videos auswählen** – ein oder mehrere Videos vom Gerät.
+   * **Von Link laden** – direkter Link auf eine Videodatei.
+   * **Teilen** – in einer beliebigen App ein Video teilen und „Video
+     Hintergrund“ als Ziel wählen.
+
+   In allen Fällen landet das Video im App-Speicher, damit der Hintergrund auch
+   nach einem Neustart und unabhängig vom Original weiterläuft.
 2. Darstellung und Wiedergabe einstellen.
 3. **Als Hintergrund festlegen** – die Android-Vorschau öffnet sich, dort bestätigen.
 
@@ -34,15 +38,21 @@ Rechner gebaut wurde. Für den Play Store ist so ein Schlüssel nicht geeignet.
 (`video/…`) oder an der Dateiendung. Nur https, höchstens 500 MB, mit
 Fortschrittsanzeige und Abbrechen-Knopf.
 
-**Links auf YouTube, TikTok, Instagram & Co. funktionieren nicht.** Diese Portale
+**Links auf YouTube, Instagram, TikTok & Co. funktionieren nicht.** Diese Portale
 liefern keine Videodatei aus, sondern eine Webseite mit eigenem Player; den
 Stream daraus herauszulösen untersagen ihre Nutzungsbedingungen. Die App erkennt
-solche Adressen und erklärt stattdessen die Alternativen:
+solche Adressen und nennt stattdessen den passenden Weg zum eigenen Material –
+je nach Portal unterschiedlich:
 
-* eigene Uploads beim Portal selbst herunterladen (bei YouTube über YouTube
-  Studio) und als Datei hinzufügen,
-* direkte Videolinks, etwa von kostenlosen Stock-Video-Seiten,
-* jedes Video, das ohnehin schon auf dem Gerät liegt.
+| Portal | Eigene Videos bekommt man so |
+|---|---|
+| YouTube | YouTube Studio → eigenes Video herunterladen |
+| Instagram | Konten-Center → „Deine Informationen und Berechtigungen“ → Informationen herunterladen, Archiv entpacken |
+| TikTok | Video in der App auf dem Gerät speichern |
+
+Danach die Datei mit „Videos auswählen“ hinzufügen oder direkt aus der Galerie in
+die App teilen. Genauso funktionieren direkte Videolinks (etwa von kostenlosen
+Stock-Video-Seiten) und alles, was ohnehin schon auf dem Gerät liegt.
 
 Antwortet ein Server mit 403, greift meist sein Schutz gegen direktes Verlinken –
 dann hilft nur, die Datei im Browser zu laden und von dort hinzuzufügen.
@@ -58,6 +68,7 @@ dann hilft nur, die Datei im Browser zu laden und von dort hinzuzufügen.
 | Geschwindigkeit | 0,25× bis 2× |
 | Mehrere Videos | Werden nacheinander abgespielt, Reihenfolge per Langdruck-Ziehen änderbar, optional zufällig |
 | Von Link laden | Direkte Videolinks per https, mit Fortschritt und Abbruch |
+| Teilen | Videos aus anderen Apps direkt an den Hintergrund übergeben |
 | Einfrieren nach | Video läuft bei jedem Blick los und friert dann ein (Standard 15 s) |
 | Bildrate begrenzen | Voll / 30 / 24 fps (Standard 30) |
 | Standbild ab Akkustand | Unter dieser Grenze nur ein Standbild, Standard 15 % |

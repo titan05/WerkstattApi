@@ -36,7 +36,7 @@ object VideoImporter {
     /** Obergrenze fuer Downloads: 500 MB. */
     const val MAX_BYTES = 500L * 1024L * 1024L
 
-    private const val USER_AGENT = "VideoHintergrund/1.2 (Android)"
+    private const val USER_AGENT = "VideoHintergrund/1.3 (Android)"
 
     // --- Datei auswaehlen -----------------------------------------------------
 
