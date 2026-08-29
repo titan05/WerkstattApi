@@ -36,7 +36,7 @@ object VideoImporter {
     /** Obergrenze fuer Downloads: 500 MB. */
     const val MAX_BYTES = 500L * 1024L * 1024L
 
-    private const val USER_AGENT = "VideoHintergrund/1.4 (Android)"
+    private const val USER_AGENT = "VideoHintergrund/1.5 (Android)"
 
     // --- Datei auswaehlen -----------------------------------------------------
 
@@ -73,7 +73,8 @@ object VideoImporter {
         context: Context,
         url: String,
         onProgress: (loadedBytes: Long, totalBytes: Long) -> Unit,
-        isCancelled: () -> Boolean
+        isCancelled: () -> Boolean,
+        displayName: String? = null
     ): UrlImportResult {
         val id = UUID.randomUUID().toString()
         var connection: HttpURLConnection? = null
@@ -145,7 +146,7 @@ object VideoImporter {
             if (loaded == 0L) return failAndClean(target, UrlImportResult.Error.NOT_A_VIDEO)
             onProgress(loaded, declaredLength)
 
-            val name = VideoUrlRules.fileNameFrom(url) ?: "Video"
+            val name = displayName ?: VideoUrlRules.fileNameFrom(url) ?: "Video"
             val item = finish(context, id, target, name)
                 ?: return UrlImportResult.Failure(UrlImportResult.Error.NOT_A_VIDEO)
             return UrlImportResult.Success(item)

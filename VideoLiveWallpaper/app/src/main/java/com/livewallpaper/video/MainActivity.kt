@@ -346,6 +346,7 @@ class MainActivity : AppCompatActivity() {
     private fun handleUrl(raw: String) {
         when (val check = VideoUrlRules.check(raw)) {
             is UrlCheck.Ok -> downloadFromUrl(check.url)
+            is UrlCheck.Extractable -> extractAndDownload(check.service, check.url)
             is UrlCheck.Streaming -> showStreamingInfo(check.service, check.url)
             UrlCheck.Cleartext -> snack(getString(R.string.url_cleartext))
             UrlCheck.Empty, UrlCheck.Invalid -> snack(getString(R.string.url_invalid))
@@ -411,6 +412,68 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun extractAndDownload(service: String, pageUrl: String) {
+        downloadCancelled = false
+        showProgress(R.string.extracting, cancellable = true)
+        importExecutor.execute {
+            if (downloadCancelled) {
+                mainHandler.post { hideProgress() }
+                return@execute
+            }
+
+            val extraction = VideoExtractor.extract(service, pageUrl)
+            if (downloadCancelled) {
+                mainHandler.post { hideProgress() }
+                return@execute
+            }
+
+            when (extraction) {
+                is ExtractionResult.Found -> {
+                    mainHandler.post { binding.progressLabel.setText(R.string.downloading) }
+                    val result = VideoImporter.importFromUrl(
+                        context = this@MainActivity,
+                        url = extraction.videoUrl,
+                        onProgress = { loaded, total ->
+                            mainHandler.post { updateProgress(loaded, total) }
+                        },
+                        isCancelled = { downloadCancelled },
+                        displayName = extraction.title
+                    )
+                    mainHandler.post {
+                        hideProgress()
+                        when (result) {
+                            is UrlImportResult.Success -> {
+                                videos.add(result.item)
+                                Prefs.writeVideos(this@MainActivity, videos)
+                                adapter.submit(videos)
+                                updateVideoViews()
+                                snack(resources.getQuantityString(R.plurals.import_done, 1, 1))
+                            }
+
+                            is UrlImportResult.Failure -> snack(getString(messageFor(result.error)))
+                        }
+                    }
+                }
+
+                is ExtractionResult.Failed -> {
+                    mainHandler.post {
+                        hideProgress()
+                        snack(getString(extractionMessage(extraction.reason), service))
+                    }
+                }
+            }
+        }
+    }
+
+    @StringRes
+    private fun extractionMessage(reason: ExtractionResult.Reason): Int = when (reason) {
+        ExtractionResult.Reason.NETWORK -> R.string.extract_failed_network
+        ExtractionResult.Reason.PRIVATE -> R.string.extract_failed_private
+        ExtractionResult.Reason.LIVE -> R.string.extract_failed_live
+        ExtractionResult.Reason.NOT_FOUND -> R.string.extract_failed_not_found
+        ExtractionResult.Reason.NO_VIDEO -> R.string.extract_failed_generic
     }
 
     @StringRes

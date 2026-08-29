@@ -8,7 +8,7 @@ import org.junit.Test
 class VideoUrlRulesTest {
 
     @Test
-    fun `YouTube-Adressen werden als Portal erkannt`() {
+    fun `YouTube-Adressen werden als ladbar erkannt`() {
         listOf(
             "https://www.youtube.com/watch?v=abc123",
             "https://youtu.be/abc123",
@@ -17,14 +17,14 @@ class VideoUrlRulesTest {
             "youtube.com/watch?v=abc123"
         ).forEach { url ->
             val result = VideoUrlRules.check(url)
-            assertTrue("$url sollte als Portal erkannt werden", result is UrlCheck.Streaming)
-            assertEquals("YouTube", (result as UrlCheck.Streaming).service)
+            assertTrue("$url sollte als ladbar erkannt werden", result is UrlCheck.Extractable)
+            assertEquals("YouTube", (result as UrlCheck.Extractable).service)
         }
     }
 
     @Test
-    fun `die Portaladresse wird zum Oeffnen mitgereicht`() {
-        val result = VideoUrlRules.check("instagram.com/reel/xyz") as UrlCheck.Streaming
+    fun `Instagram-Adressen werden als ladbar erkannt`() {
+        val result = VideoUrlRules.check("instagram.com/reel/xyz") as UrlCheck.Extractable
         assertEquals("Instagram", result.service)
         assertEquals("https://instagram.com/reel/xyz", result.url)
     }
@@ -33,7 +33,6 @@ class VideoUrlRulesTest {
     fun `weitere Portale werden mit Namen gemeldet`() {
         assertEquals("Vimeo", service("https://vimeo.com/123456"))
         assertEquals("TikTok", service("https://www.tiktok.com/@name/video/1"))
-        assertEquals("Instagram", service("https://instagram.com/reel/xyz"))
         assertEquals("X", service("https://x.com/name/status/1"))
     }
 

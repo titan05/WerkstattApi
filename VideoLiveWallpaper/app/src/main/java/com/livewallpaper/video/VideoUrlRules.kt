@@ -7,6 +7,9 @@ sealed class UrlCheck {
     /** Adresse sieht nach einer direkt ladbaren Videodatei aus. */
     data class Ok(val url: String) : UrlCheck()
 
+    /** Portal, dessen Video automatisch heruntergeladen werden kann. */
+    data class Extractable(val service: String, val url: String) : UrlCheck()
+
     /** Videoportal - dort gibt es keine direkte Videodatei. */
     data class Streaming(val service: String, val url: String) : UrlCheck()
 
@@ -24,18 +27,18 @@ sealed class UrlCheck {
  */
 object VideoUrlRules {
 
-    /**
-     * Portale, die ihre Videos nur ueber den eigenen Player ausliefern. Ein
-     * Link darauf ist eine Webseite, keine Videodatei; das Herausloesen des
-     * Streams untersagen die jeweiligen Nutzungsbedingungen.
-     */
-    private val streamingHosts = mapOf(
+    /** Portale, deren Video die App automatisch herunterladen kann. */
+    private val extractableHosts = mapOf(
         "youtube.com" to "YouTube",
         "youtu.be" to "YouTube",
         "youtube-nocookie.com" to "YouTube",
+        "instagram.com" to "Instagram"
+    )
+
+    /** Portale ohne automatischen Download - nur Info-Dialog. */
+    private val streamingHosts = mapOf(
         "vimeo.com" to "Vimeo",
         "tiktok.com" to "TikTok",
-        "instagram.com" to "Instagram",
         "facebook.com" to "Facebook",
         "fb.watch" to "Facebook",
         "dailymotion.com" to "Dailymotion",
@@ -62,6 +65,7 @@ object VideoUrlRules {
         }
 
         val host = uri.host?.lowercase() ?: return UrlCheck.Invalid
+        extractableServiceFor(host)?.let { return UrlCheck.Extractable(it, candidate) }
         serviceFor(host)?.let { return UrlCheck.Streaming(it, candidate) }
 
         return when (uri.scheme?.lowercase()) {
@@ -70,6 +74,10 @@ object VideoUrlRules {
             else -> UrlCheck.Invalid
         }
     }
+
+    private fun extractableServiceFor(host: String): String? = extractableHosts.entries
+        .firstOrNull { (domain, _) -> host == domain || host.endsWith(".$domain") }
+        ?.value
 
     private fun serviceFor(host: String): String? = streamingHosts.entries
         .firstOrNull { (domain, _) -> host == domain || host.endsWith(".$domain") }

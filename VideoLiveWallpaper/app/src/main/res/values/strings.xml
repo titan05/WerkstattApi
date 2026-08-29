@@ -16,8 +16,8 @@
     <string name="add_videos">Videos auswählen</string>
     <string name="add_from_link">Von Link laden</string>
     <string name="link_dialog_title">Video-Link</string>
-    <string name="link_hint">https://…/video.mp4</string>
-    <string name="link_dialog_hint">Direkter Link auf eine Videodatei. Links auf YouTube, TikTok &amp; Co. sind Webseiten und enthalten keine Videodatei – die funktionieren nicht.</string>
+    <string name="link_hint">YouTube, Instagram oder direkter .mp4-Link</string>
+    <string name="link_dialog_hint">YouTube- und Instagram-Links werden automatisch heruntergeladen. Direkte Links auf Videodateien (.mp4 usw.) gehen ebenfalls.</string>
     <string name="load">Laden</string>
     <string name="cancel">Abbrechen</string>
     <string name="understood">Verstanden</string>
@@ -32,7 +32,13 @@
     <string name="shared_no_video">Damit kann die App nichts anfangen – bitte ein Video teilen.</string>
     <string name="url_cleartext">Nur verschlüsselte Links (https) werden geladen.</string>
     <string name="url_invalid">Das sieht nicht nach einer Web-Adresse aus.</string>
+    <string name="extracting">Video wird gesucht …</string>
     <string name="downloading">Video wird geladen …</string>
+    <string name="extract_failed_network">Die Verbindung zu %1$s ist fehlgeschlagen.</string>
+    <string name="extract_failed_private">Dieses %1$s-Video ist privat oder nicht verfügbar.</string>
+    <string name="extract_failed_live">Live-Streams können nicht heruntergeladen werden.</string>
+    <string name="extract_failed_not_found">Das Video wurde bei %1$s nicht gefunden.</string>
+    <string name="extract_failed_generic">Das Video konnte nicht von %1$s geladen werden. Möglicherweise wurde der Zugriff blockiert.</string>
     <string name="download_progress">%1$s von %2$s</string>
     <string name="download_progress_unknown">%1$s geladen</string>
     <string name="download_failed_network">Der Link konnte nicht geladen werden. Erreichbar?</string>
