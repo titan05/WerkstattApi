@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/panelRoundOver"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/panel_round"
+    android:padding="10dp"
+    android:visibility="gone">
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnNextRound"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:background="@drawable/btn_gold"
+        android:text="Nächste Runde"
+        android:textAllCaps="false"
+        android:textColor="#0C2A18"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:stateListAnimator="@null" />
+</LinearLayout>

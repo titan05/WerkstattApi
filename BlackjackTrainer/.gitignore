@@ -1,0 +1,13 @@
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Signierschlüssel gehört nicht ins Repo
+keystore.properties
+*.keystore
+*.jks

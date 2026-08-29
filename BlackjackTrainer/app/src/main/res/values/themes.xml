@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.BlackjackTrainer" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/gold</item>
+        <item name="colorPrimaryDark">@color/felt_edge</item>
+        <item name="colorAccent">@color/gold</item>
+        <item name="android:statusBarColor">@color/felt_edge</item>
+        <item name="android:navigationBarColor">@color/felt_edge</item>
+        <item name="android:windowBackground">@drawable/bg_felt</item>
+    </style>
+</resources>

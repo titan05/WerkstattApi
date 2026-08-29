@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="felt_top">#0E7A44</color>
+    <color name="felt_bottom">#064A29</color>
+    <color name="felt_edge">#03301B</color>
+    <color name="gold">#E8B830</color>
+    <color name="gold_dark">#B8890F</color>
+    <color name="panel">#33000000</color>
+    <color name="panel_strong">#59000000</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_muted">#BFE3CC</color>
+    <color name="win">#4CD97B</color>
+    <color name="lose">#FF6B6B</color>
+    <color name="push">#FFD166</color>
+    <color name="chip_red">#C62828</color>
+    <color name="chip_green">#2E7D32</color>
+    <color name="chip_blue">#1565C0</color>
+    <color name="chip_black">#212121</color>
+    <color name="chip_purple">#6A1B9A</color>
+    <color name="btn_action">#F5F7FA</color>
+    <color name="btn_action_text">#0C2A18</color>
+</resources>
