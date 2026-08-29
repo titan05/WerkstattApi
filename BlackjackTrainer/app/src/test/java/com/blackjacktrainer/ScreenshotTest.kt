@@ -7,6 +7,10 @@ import android.view.View
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.blackjacktrainer.databinding.ActivityMainBinding
 import com.blackjacktrainer.databinding.ActivityStrategyBinding
+import com.blackjacktrainer.game.BlackjackGame
+import com.blackjacktrainer.game.Card
+import com.blackjacktrainer.game.Rank
+import com.blackjacktrainer.game.Suit
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -29,7 +33,7 @@ class ScreenshotTest {
 
     private fun capture(view: View, name: String, settle: Boolean = true) {
         // Einflug-Animationen der Karten zu Ende laufen lassen
-        if (settle) shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1500))
+        if (settle) shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(30))
         val width = 411 * 3
         val height = 891 * 3
         view.measure(
@@ -91,5 +95,52 @@ class ScreenshotTest {
         val strategyBinding = strategyField.get(strategy) as ActivityStrategyBinding
         strategyBinding.root.background = strategy.getDrawable(R.drawable.bg_felt)
         capture(strategyBinding.root, "05_strategie")
+    }
+
+    /**
+     * Geteilte Hand und Dealer-Zug lassen sich nicht erwürfeln, deshalb hier
+     * mit vorgelegten Karten: Ein Paar Achten gegen eine 6.
+     */
+    @Test
+    fun splitUndDealerZug() {
+        val activity = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        val bindingField = MainActivity::class.java.getDeclaredField("binding")
+        bindingField.isAccessible = true
+        val binding = bindingField.get(activity) as ActivityMainBinding
+        binding.root.background = activity.getDrawable(R.drawable.bg_felt)
+
+        val gameField = MainActivity::class.java.getDeclaredField("game")
+        gameField.isAccessible = true
+        val game = gameField.get(activity) as BlackjackGame
+
+        // Spieler, Dealer offen, Spieler, verdeckt, dann die Split-Karten
+        game.shoe.stackTop(
+            listOf(
+                Card(Rank.EIGHT, Suit.PIK), Card(Rank.SIX, Suit.KARO),
+                Card(Rank.EIGHT, Suit.HERZ), Card(Rank.QUEEN, Suit.KREUZ),
+                Card(Rank.THREE, Suit.KARO), Card(Rank.KING, Suit.PIK),
+                Card(Rank.NINE, Suit.HERZ), Card(Rank.FOUR, Suit.KREUZ)
+            )
+        )
+
+        binding.incBetting.btnClearBet.performClick()
+        binding.incBetting.chip25.performClick()
+        binding.incBetting.chip100.performClick()
+        binding.incBetting.btnDeal.performClick()
+        binding.incActions.btnSplit.performClick()
+        capture(binding.root, "06_split")
+
+        // Beide Hände stehen lassen, dann fängt der Dealer an
+        var guard = 0
+        while (binding.incActions.root.visibility == View.VISIBLE && guard++ < 10) {
+            binding.incActions.btnStand.performClick()
+        }
+        // Mitten im Dealer-Zug: aufgedeckt und die erste Karte gezogen, aber noch
+        // nicht abgerechnet. Der Takt läuft über den Handler, ist also im
+        // Test beobachtbar - anders als die Animationen.
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(900))
+        capture(binding.root, "07_dealer", settle = false)
+
+        capture(binding.root, "08_ergebnis")
     }
 }

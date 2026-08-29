@@ -4,6 +4,8 @@ import android.animation.ValueAnimator
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
@@ -50,6 +52,10 @@ class MainActivity : AppCompatActivity() {
      *  zeitliche Staffelung, damit sie nacheinander landen. */
     private var dealStagger = 0
 
+    /** Taktgeber für den Dealer-Zug: eine Karte nach der anderen. */
+    private val handler = Handler(Looper.getMainLooper())
+    private var dealerRunning = false
+
     private val money: NumberFormat = NumberFormat.getIntegerInstance(Locale.GERMAN)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +80,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        handler.removeCallbacks(dealerStep)
+        dealerRunning = false
         stopGlow()
         prefs.bankroll = game.bankroll
         prefs.saveStats(game.stats)
@@ -115,6 +123,35 @@ class MainActivity : AppCompatActivity() {
         btnRevealTip.setOnClickListener { tipRevealed = true; render() }
         btnSettings.setOnClickListener { showSettings() }
         btnChart.setOnClickListener { startActivity(Intent(this@MainActivity, StrategyActivity::class.java)) }
+    }
+
+    /**
+     * Spielt den Dealer-Zug im Takt ab, statt ihn in einem Schritt aufzulösen:
+     * aufdecken, kurz warten, Karte, warten, Karte ... und erst danach
+     * abrechnen. Wird nach jedem render() angestoßen und läuft nur einmal.
+     */
+    private fun runDealerTurn() {
+        if (game.state != GameState.DEALER_TURN || dealerRunning) return
+        dealerRunning = true
+        handler.postDelayed(dealerStep, FIRST_DEALER_PAUSE)
+    }
+
+    private val dealerStep = object : Runnable {
+        override fun run() {
+            if (game.state != GameState.DEALER_TURN) {
+                dealerRunning = false
+                return
+            }
+            if (game.dealerNeedsCard()) {
+                game.dealerDrawCard()
+                render()
+                handler.postDelayed(this, DEALER_CARD_PAUSE)
+            } else {
+                game.finishRound()
+                dealerRunning = false
+                render()
+            }
+        }
     }
 
     private fun addChip(amount: Int) {
@@ -211,6 +248,7 @@ class MainActivity : AppCompatActivity() {
         renderTip()
         renderStats()
         renderGlow()
+        runDealerTurn()
     }
 
     // ------------------------------------------------------------ Hervorheben
@@ -352,6 +390,8 @@ class MainActivity : AppCompatActivity() {
     private fun renderPlayerHands() {
         val container = binding.playerHands
         container.removeAllViews()
+        // Ohne laufende Runde gibt es kein Blatt zu beschriften
+        binding.playerHeader.visibility = visibleIf(game.hands.isNotEmpty())
         val width = cardWidthDp()
         val resultsByHand = game.results.associateBy({ it.hand }, { it })
 
@@ -376,6 +416,7 @@ class MainActivity : AppCompatActivity() {
                 if (hand.isBusted) ContextCompat.getColor(this, R.color.lose) else Color.WHITE
             )
 
+            handBinding.handChips.amount = hand.totalWager
             val betText = StringBuilder(money.format(hand.totalWager))
             if (hand.doubled) betText.append(" (verdoppelt)")
             if (hand.surrendered) betText.append(" (aufgegeben)")
@@ -429,9 +470,11 @@ class MainActivity : AppCompatActivity() {
         incActions.root.visibility = visibleIf(game.state == GameState.PLAYER_TURN)
         incInsurance.root.visibility = visibleIf(game.state == GameState.INSURANCE)
         incRoundOver.root.visibility = visibleIf(game.state == GameState.ROUND_OVER)
+        incDealer.root.visibility = visibleIf(game.state == GameState.DEALER_TURN)
 
         if (game.state == GameState.BETTING) {
             incBetting.betDisplay.text = "Einsatz: ${money.format(game.pendingBet)}"
+            incBetting.betChips.amount = game.pendingBet
             incBetting.btnDeal.isEnabled = game.pendingBet > 0
         }
         if (game.state == GameState.PLAYER_TURN) {
@@ -495,6 +538,11 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
+            }
+            GameState.DEALER_TURN -> {
+                binding.tipAction.text = "Dealer zieht"
+                binding.tipReason.text = "Er muss bis 17 ziehen" +
+                    if (game.rules.dealerHitsSoft17) " und auch eine Soft 17 noch verbessern." else "."
             }
             else -> {
                 binding.tipAction.text = "Runde beendet"
@@ -686,5 +734,12 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton("Nein", null)
             .show()
+    }
+
+    private companion object {
+        /** Pause nach dem Aufdecken der verdeckten Karte. */
+        const val FIRST_DEALER_PAUSE = 700L
+        /** Pause zwischen zwei Karten des Dealers. */
+        const val DEALER_CARD_PAUSE = 850L
     }
 }

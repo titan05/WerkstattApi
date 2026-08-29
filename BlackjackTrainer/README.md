@@ -22,6 +22,12 @@ Verdoppeln, Aufgeben, Versicherung, Blackjack zahlt 3:2. Die Karten fliegen
 gestaffelt aus dem Schlitten oben rechts an ihren Platz — erst deine, dann die
 des Dealers. Am Schlitten steht, wie viele Decks noch drin sind.
 
+Beim Teilen bekommen **beide** Hände sofort ihre zweite Karte, bevor du die
+erste spielst — du siehst also, worauf du dich einlässt. Der Dealer deckt auf
+und zieht dann Karte für Karte mit Pause dazwischen; abgerechnet wird erst,
+wenn er fertig ist. Einsätze liegen als Jetonstapel auf dem Tisch, aus 500ern,
+100ern, 25ern und 5ern zusammengesetzt.
+
 **Tipps mit Begründung.** Vor jeder Entscheidung sagt die App, was die
 Basisstrategie vorschreibt, und erklärt in einem Satz, warum — nicht nur
 "Stehen", sondern *warum* Stehen gegen eine 6 richtig ist. Der Button der

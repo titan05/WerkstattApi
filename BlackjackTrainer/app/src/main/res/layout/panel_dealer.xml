@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Platzhalter, solange der Dealer zieht: hält die Steuerleiste auf Höhe,
+     damit das Layout nicht springt. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/panelDealer"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/panel_round"
+    android:padding="10dp"
+    android:visibility="gone">
+
+    <TextView
+        android:id="@+id/dealerTurnText"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:gravity="center"
+        android:text="Der Dealer zieht …"
+        android:textColor="@color/gold"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+</LinearLayout>

@@ -263,8 +263,12 @@ class BlackjackGame(var rules: Rules, var bankroll: Int = 1000) {
         }
         hands.add(activeIndex + 1, newHand)
 
+        // Beide Hände bekommen sofort ihre zweite Karte - so siehst du, worauf
+        // du dich einlässt, bevor du die erste Hand spielst.
         hand.add(shoe.deal())
-        if (hand.cards.size == 2 && (hand.total == 21 || (hand.isSplitAces && !rules.hitSplitAces))) {
+        newHand.add(shoe.deal())
+
+        if (hand.total == 21 || (hand.isSplitAces && !rules.hitSplitAces)) {
             advanceHand()
         }
     }
@@ -279,8 +283,8 @@ class BlackjackGame(var rules: Rules, var bankroll: Int = 1000) {
     private fun advanceHand() {
         var i = activeIndex + 1
         while (i < hands.size) {
+            // Alle Hände haben schon zwei Karten - split() teilt beiden aus.
             val hand = hands[i]
-            if (hand.cards.size == 1) hand.add(shoe.deal())
             val done = hand.isBusted || hand.total == 21 ||
                 (hand.isSplitAces && !rules.hitSplitAces)
             if (!done) {
@@ -291,25 +295,44 @@ class BlackjackGame(var rules: Rules, var bankroll: Int = 1000) {
             i++
         }
         activeIndex = hands.size - 1
-        dealerTurn()
+        beginDealerTurn()
     }
 
     // ----------------------------------------------------------- Dealer-Zug
 
-    private fun dealerTurn() {
+    /**
+     * Der Dealer-Zug läuft schrittweise ab: erst aufdecken, dann Karte für
+     * Karte. Die Oberfläche taktet die Schritte, damit man zusehen kann.
+     * [playDealerOut] spielt ihn am Stück - für Tests und als Notausgang.
+     */
+    private fun beginDealerTurn() {
         state = GameState.DEALER_TURN
         revealHole()
+        lastMessage = "Der Dealer ist am Zug."
+    }
 
-        val liveHands = hands.any { !it.isBusted && !it.surrendered }
-        if (liveHands) {
-            while (true) {
-                val total = dealer.total
-                val mustHit = total < 17 || (total == 17 && dealer.isSoft && rules.dealerHitsSoft17)
-                if (!mustHit) break
-                dealer.add(shoe.deal())
-            }
-        }
+    /** true, solange der Dealer noch eine Karte nehmen muss. */
+    fun dealerNeedsCard(): Boolean {
+        if (state != GameState.DEALER_TURN) return false
+        // Sind alle Spielerhände überkauft oder aufgegeben, zieht er nicht mehr.
+        if (hands.none { !it.isBusted && !it.surrendered }) return false
+        val total = dealer.total
+        return total < 17 || (total == 17 && dealer.isSoft && rules.dealerHitsSoft17)
+    }
+
+    fun dealerDrawCard() {
+        if (!dealerNeedsCard()) return
+        dealer.add(shoe.deal())
+    }
+
+    fun finishRound() {
+        if (state != GameState.DEALER_TURN) return
         settle()
+    }
+
+    fun playDealerOut() {
+        while (dealerNeedsCard()) dealerDrawCard()
+        finishRound()
     }
 
     // ---------------------------------------------------------- Auszahlung

@@ -292,6 +292,7 @@
         <include android:id="@+id/incActions" layout="@layout/panel_actions" />
         <include android:id="@+id/incInsurance" layout="@layout/panel_insurance" />
         <include android:id="@+id/incRoundOver" layout="@layout/panel_roundover" />
+        <include android:id="@+id/incDealer" layout="@layout/panel_dealer" />
     </FrameLayout>
 
     <TextView

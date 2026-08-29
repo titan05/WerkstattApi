@@ -1,5 +1,6 @@
 package com.blackjacktrainer
 
+import android.os.Looper
 import android.view.View
 import android.widget.LinearLayout
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -11,6 +12,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.time.Duration
 
 /**
  * Spielt die App auf der JVM durch: Layout aufbauen, setzen, geben,
@@ -19,6 +21,11 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = "de-rDE-w411dp-h891dp-xxhdpi")
 class UiSmokeTest {
+
+    /** Der Dealer-Zug läuft über den Handler - hier abwarten, bis er durch ist. */
+    private fun settleDealer() {
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(30))
+    }
 
     private fun launch(): Pair<MainActivity, ActivityMainBinding> {
         val activity = Robolectric.buildActivity(MainActivity::class.java).setup().get()
@@ -60,6 +67,7 @@ class UiSmokeTest {
         if (binding.incActions.root.visibility == View.VISIBLE) {
             binding.incActions.btnStand.performClick()
         }
+        settleDealer()
 
         assertEquals(View.VISIBLE, binding.incRoundOver.root.visibility)
         assertTrue(binding.statusText.text.isNotEmpty())
@@ -92,6 +100,7 @@ class UiSmokeTest {
                     else -> binding.incActions.btnStand.performClick()
                 }
             }
+            settleDealer()
             if (binding.incRoundOver.root.visibility == View.VISIBLE) {
                 binding.incRoundOver.btnNextRound.performClick()
             }
@@ -164,5 +173,53 @@ class UiSmokeTest {
             assertEquals(shoe[0], settled[0] + card.translationX.toInt())
             assertEquals(shoe[1], settled[1] + card.translationY.toInt())
         }
+    }
+
+    @Test
+    fun einsatzWirdAlsJetonstapelGezeigt() {
+        val (_, binding) = launch()
+        binding.incBetting.btnClearBet.performClick()
+        assertEquals(0, binding.incBetting.betChips.amount)
+
+        binding.incBetting.chip100.performClick()
+        binding.incBetting.chip25.performClick()
+        assertEquals(125, binding.incBetting.betChips.amount)
+        // 100er und 25er ergeben zwei Jetons, der Stapel hat also Höhe
+        assertTrue(binding.incBetting.betChips.measuredHeight > 0)
+
+        binding.incBetting.btnDeal.performClick()
+        val hand = binding.playerHands.getChildAt(0) as LinearLayout
+        val chips = hand.findViewById<com.blackjacktrainer.ui.ChipStackView>(R.id.handChips)
+        assertEquals(125, chips.amount)
+    }
+
+    @Test
+    fun dealerZiehtNichtAllesAufEinmal() {
+        val (_, binding) = launch()
+        var found = false
+        repeat(40) {
+            if (found) return@repeat
+            if (binding.incBetting.root.visibility == View.VISIBLE) {
+                binding.incBetting.btnClearBet.performClick()
+                binding.incBetting.chip5.performClick()
+                binding.incBetting.btnDeal.performClick()
+            }
+            if (binding.incInsurance.root.visibility == View.VISIBLE) {
+                binding.incInsurance.btnInsuranceNo.performClick()
+            }
+            if (binding.incActions.root.visibility == View.VISIBLE) {
+                binding.incActions.btnStand.performClick()
+                // Direkt nach dem Stehenbleiben ist der Dealer dran, aber die
+                // Runde darf noch nicht abgerechnet sein.
+                assertEquals(View.GONE, binding.incRoundOver.root.visibility)
+                assertTrue(binding.tipAction.text.toString() == "Dealer zieht")
+                found = true
+            }
+            settleDealer()
+            if (binding.incRoundOver.root.visibility == View.VISIBLE) {
+                binding.incRoundOver.btnNextRound.performClick()
+            }
+        }
+        assertTrue("Keine Runde bis zum Dealer-Zug gekommen", found)
     }
 }
