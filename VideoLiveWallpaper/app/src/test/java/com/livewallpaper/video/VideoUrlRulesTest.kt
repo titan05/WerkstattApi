@@ -23,6 +23,13 @@ class VideoUrlRulesTest {
     }
 
     @Test
+    fun `die Portaladresse wird zum Oeffnen mitgereicht`() {
+        val result = VideoUrlRules.check("instagram.com/reel/xyz") as UrlCheck.Streaming
+        assertEquals("Instagram", result.service)
+        assertEquals("https://instagram.com/reel/xyz", result.url)
+    }
+
+    @Test
     fun `weitere Portale werden mit Namen gemeldet`() {
         assertEquals("Vimeo", service("https://vimeo.com/123456"))
         assertEquals("TikTok", service("https://www.tiktok.com/@name/video/1"))

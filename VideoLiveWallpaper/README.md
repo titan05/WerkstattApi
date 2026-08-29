@@ -2,11 +2,11 @@
 
 Eine kleine Android-App, mit der eigene Videos als Live-Hintergrund laufen.
 
-**Fertige App:** [`dist/VideoHintergrund-1.3.apk`](dist/VideoHintergrund-1.3.apk)
+**Fertige App:** [`dist/VideoHintergrund-1.4.apk`](dist/VideoHintergrund-1.4.apk)
 
 ## Installieren
 
-1. Die Datei `dist/VideoHintergrund-1.3.apk` auf das Handy kopieren (USB, Cloud, E‑Mail …).
+1. Die Datei `dist/VideoHintergrund-1.4.apk` auf das Handy kopieren (USB, Cloud, E‑Mail …).
 2. Im Dateimanager antippen. Android fragt einmalig nach der Erlaubnis
    „Unbekannte Apps installieren“ für den Dateimanager – erlauben.
 3. Installieren, App „Video Hintergrund“ öffnen.
@@ -38,20 +38,24 @@ Rechner gebaut wurde. Für den Play Store ist so ein Schlüssel nicht geeignet.
 (`video/…`) oder an der Dateiendung. Nur https, höchstens 500 MB, mit
 Fortschrittsanzeige und Abbrechen-Knopf.
 
-**Links auf YouTube, Instagram, TikTok & Co. funktionieren nicht.** Diese Portale
-liefern keine Videodatei aus, sondern eine Webseite mit eigenem Player; den
-Stream daraus herauszulösen untersagen ihre Nutzungsbedingungen. Die App erkennt
-solche Adressen und nennt stattdessen den passenden Weg zum eigenen Material –
-je nach Portal unterschiedlich:
+**Links auf YouTube, Instagram, TikTok & Co. lädt die App nicht.** Diese Portale
+liefern keine Videodatei aus, sondern eine Webseite mit eigenem Player. Den
+Stream daraus herauszulösen wäre technisch möglich, untersagen aber ihre
+Nutzungsbedingungen – und solche Extraktoren gehen bei jeder Änderung an der
+Gegenseite kaputt. Die App macht das deshalb nicht.
 
-| Portal | Eigene Videos bekommt man so |
+Stattdessen erkennt sie solche Adressen, nennt den regulären Weg zum Video und
+bietet an, den Beitrag **gleich in der App des Portals zu öffnen**. Dort lässt
+sich das Video meist offiziell speichern:
+
+| Portal | Regulärer Weg zum Video |
 |---|---|
-| YouTube | YouTube Studio → eigenes Video herunterladen |
-| Instagram | Konten-Center → „Deine Informationen und Berechtigungen“ → Informationen herunterladen, Archiv entpacken |
+| Instagram | Beitrag öffnen → „…“ bzw. Teilen → „Auf Gerät speichern“ (der Ersteller kann das abschalten). Eigene Videos zusätzlich über Konten-Center → „Deine Informationen herunterladen“ |
+| YouTube | Eigene Uploads über YouTube Studio herunterladen |
 | TikTok | Video in der App auf dem Gerät speichern |
 
-Danach die Datei mit „Videos auswählen“ hinzufügen oder direkt aus der Galerie in
-die App teilen. Genauso funktionieren direkte Videolinks (etwa von kostenlosen
+Danach in der Galerie auf Teilen tippen und „Video Hintergrund“ wählen – fertig.
+Genauso funktionieren direkte Videolinks (etwa von kostenlosen
 Stock-Video-Seiten) und alles, was ohnehin schon auf dem Gerät liegt.
 
 Antwortet ein Server mit 403, greift meist sein Schutz gegen direktes Verlinken –

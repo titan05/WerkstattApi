@@ -346,19 +346,34 @@ class MainActivity : AppCompatActivity() {
     private fun handleUrl(raw: String) {
         when (val check = VideoUrlRules.check(raw)) {
             is UrlCheck.Ok -> downloadFromUrl(check.url)
-            is UrlCheck.Streaming -> showStreamingInfo(check.service)
+            is UrlCheck.Streaming -> showStreamingInfo(check.service, check.url)
             UrlCheck.Cleartext -> snack(getString(R.string.url_cleartext))
             UrlCheck.Empty, UrlCheck.Invalid -> snack(getString(R.string.url_invalid))
         }
     }
 
-    /** Erklaert, warum ein Portal-Link nicht funktioniert, und was stattdessen geht. */
-    private fun showStreamingInfo(service: String) {
+    /**
+     * Erklaert, warum ein Portal-Link nicht funktioniert, und reicht ihn auf
+     * Wunsch an die App des Portals weiter - dort laesst sich das Video oft
+     * regulaer auf dem Geraet speichern und danach hierher teilen.
+     */
+    private fun showStreamingInfo(service: String, url: String) {
         MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.streaming_title, service))
             .setMessage(getString(R.string.streaming_message, service, ownContentHint(service)))
-            .setPositiveButton(R.string.understood, null)
+            .setNegativeButton(R.string.understood, null)
+            .setPositiveButton(getString(R.string.open_in_service, service)) { _, _ ->
+                openExternally(url)
+            }
             .show()
+    }
+
+    private fun openExternally(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: ActivityNotFoundException) {
+            snack(getString(R.string.open_failed))
+        }
     }
 
     /** Wie man an die eigenen Videos des jeweiligen Portals kommt. */

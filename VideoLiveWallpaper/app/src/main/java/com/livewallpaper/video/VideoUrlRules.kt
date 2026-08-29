@@ -8,7 +8,7 @@ sealed class UrlCheck {
     data class Ok(val url: String) : UrlCheck()
 
     /** Videoportal - dort gibt es keine direkte Videodatei. */
-    data class Streaming(val service: String) : UrlCheck()
+    data class Streaming(val service: String, val url: String) : UrlCheck()
 
     /** Unverschluesselt (http) - wird aus Sicherheitsgruenden nicht geladen. */
     object Cleartext : UrlCheck()
@@ -62,7 +62,7 @@ object VideoUrlRules {
         }
 
         val host = uri.host?.lowercase() ?: return UrlCheck.Invalid
-        serviceFor(host)?.let { return UrlCheck.Streaming(it) }
+        serviceFor(host)?.let { return UrlCheck.Streaming(it, candidate) }
 
         return when (uri.scheme?.lowercase()) {
             "https" -> UrlCheck.Ok(candidate)
