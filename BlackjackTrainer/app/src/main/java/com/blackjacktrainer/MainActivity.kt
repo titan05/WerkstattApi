@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.LinearLayout
@@ -14,6 +15,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnPreDraw
 import com.blackjacktrainer.databinding.ActivityMainBinding
 import com.blackjacktrainer.databinding.DialogSettingsBinding
 import com.blackjacktrainer.databinding.ViewHandBinding
@@ -43,6 +45,10 @@ class MainActivity : AppCompatActivity() {
 
     /** Puls des hervorgehobenen Buttons. */
     private var glowAnimator: ValueAnimator? = null
+
+    /** Zählt die Karten, die in diesem Durchlauf neu einfliegen - für die
+     *  zeitliche Staffelung, damit sie nacheinander landen. */
+    private var dealStagger = 0
 
     private val money: NumberFormat = NumberFormat.getIntegerInstance(Locale.GERMAN)
 
@@ -193,9 +199,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun render() {
         binding.bankrollValue.text = money.format(game.bankroll)
+        dealStagger = 0
         renderCount()
-        renderDealer()
+        renderShoe()
+        // Spielerhände zuerst: beim Austeilen fliegen deine Karten vor denen
+        // des Dealers ein, so wie am Tisch.
         renderPlayerHands()
+        renderDealer()
         renderStatus()
         renderPanels()
         renderTip()
@@ -278,6 +288,11 @@ class MainActivity : AppCompatActivity() {
             }
             start()
         }
+    }
+
+    private fun renderShoe() {
+        val decks = String.format(Locale.GERMAN, "%.1f", game.shoe.decksRemaining)
+        binding.shoeLabel.text = if (game.shoe.cutCardReached) "mischen" else decks
     }
 
     private fun renderCount() {
@@ -507,9 +522,8 @@ class MainActivity : AppCompatActivity() {
     private fun renderStats() {
         val s = game.stats
         val net = if (s.net >= 0) "+${money.format(s.net)}" else money.format(s.net)
-        val decks = String.format(Locale.GERMAN, "%.1f", game.shoe.decksRemaining)
         binding.statsBar.text =
-            "Hände ${s.handsPlayed} · Richtig ${s.accuracy} % · Bilanz $net · Schuh $decks Decks"
+            "Hände ${s.handsPlayed} · Richtig ${s.accuracy} % · Bilanz $net"
     }
 
     private fun visibleIf(condition: Boolean) = if (condition) View.VISIBLE else View.GONE
@@ -532,18 +546,61 @@ class MainActivity : AppCompatActivity() {
         params.marginStart = if (container.childCount == 0) 0 else (2 * resources.displayMetrics.density).toInt()
         container.addView(view, params)
 
-        if (animate) {
-            view.alpha = 0f
-            view.translationX = -30 * resources.displayMetrics.density
+        if (animate) flyFromShoe(view, dealStagger++)
+    }
+
+    /**
+     * Lässt eine Karte vom Schlitten an ihren Platz fliegen. Die Zielposition
+     * steht erst nach dem Layout fest, deshalb wird der Startpunkt im
+     * PreDraw gesetzt - vor dem ersten Zeichnen, die Karte ist also nie
+     * an der falschen Stelle zu sehen.
+     */
+    private fun flyFromShoe(view: View, order: Int) {
+        view.alpha = 0f
+        view.doOnPreDraw {
+            placeAtShoe(view)
             view.animate()
-                .alpha(1f)
                 .translationX(0f)
-                .setDuration(220)
-                // Endzustand hart setzen, damit die Karte auch dann sichtbar ist,
-                // wenn das System Animationen abgeschaltet hat.
-                .withEndAction { view.alpha = 1f; view.translationX = 0f }
+                .translationY(0f)
+                .rotation(0f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setStartDelay(order * 85L)
+                .setDuration(330)
+                .setInterpolator(DecelerateInterpolator(1.6f))
+                // Endzustand hart setzen, falls Animationen im System aus sind
+                .withEndAction {
+                    view.translationX = 0f
+                    view.translationY = 0f
+                    view.rotation = 0f
+                    view.scaleX = 1f
+                    view.scaleY = 1f
+                    view.alpha = 1f
+                }
                 .start()
         }
+    }
+
+    /**
+     * Versetzt eine bereits einsortierte Karte auf die Position des
+     * Schlittens - der Startpunkt des Einflugs. Setzt die Verschiebung
+     * vorher zurück, ist also mehrfach aufrufbar.
+     */
+    internal fun placeAtShoe(view: View) {
+        view.translationX = 0f
+        view.translationY = 0f
+
+        val shoe = IntArray(2)
+        val target = IntArray(2)
+        binding.shoeStack.getLocationOnScreen(shoe)
+        view.getLocationOnScreen(target)
+
+        view.translationX = (shoe[0] - target[0]).toFloat()
+        view.translationY = (shoe[1] - target[1]).toFloat()
+        view.rotation = -14f
+        view.scaleX = 0.8f
+        view.scaleY = 0.8f
+        view.alpha = 1f
     }
 
     private fun toast(text: String) {

@@ -27,9 +27,9 @@ class ScreenshotTest {
 
     private val outputDir = File("build/screenshots").apply { mkdirs() }
 
-    private fun capture(view: View, name: String) {
-        // Einblend-Animationen der Karten zu Ende laufen lassen
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
+    private fun capture(view: View, name: String, settle: Boolean = true) {
+        // Einflug-Animationen der Karten zu Ende laufen lassen
+        if (settle) shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1500))
         val width = 411 * 3
         val height = 891 * 3
         view.measure(

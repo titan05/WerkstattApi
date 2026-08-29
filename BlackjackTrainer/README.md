@@ -18,7 +18,9 @@ Ab Android 7.0 (API 24) lauffähig.
 
 **Echtes Casino-Spiel.** Schlitten aus 1–8 Decks mit Cut-Card, Dealer mit
 verdeckter Karte und Peek auf Blackjack, Teilen auf bis zu vier Hände,
-Verdoppeln, Aufgeben, Versicherung, Blackjack zahlt 3:2.
+Verdoppeln, Aufgeben, Versicherung, Blackjack zahlt 3:2. Die Karten fliegen
+gestaffelt aus dem Schlitten oben rechts an ihren Platz — erst deine, dann die
+des Dealers. Am Schlitten steht, wie viele Decks noch drin sind.
 
 **Tipps mit Begründung.** Vor jeder Entscheidung sagt die App, was die
 Basisstrategie vorschreibt, und erklärt in einem Satz, warum — nicht nur
@@ -73,6 +75,10 @@ Die Tests vergleichen die Engine Zelle für Zelle mit der veröffentlichten
 Multi-Deck-Basisstrategie (harte Hände, Soft-Hände, Paare, jeweils für H17 und
 S17), prüfen Auszahlungen, Splits, Versicherung und Kartenzählung und spielen
 die Oberfläche mit Robolectric 100 Runden lang durch.
+
+Robolectric schaltet Animatoren ab, der Einflug ist dort also nicht
+beobachtbar. Getestet wird stattdessen seine Geometrie: dass jede neue Karte
+ihren Weg am Schlitten beginnt.
 
 `ScreenshotTest` rendert die Bildschirme ohne Gerät nach
 `app/build/screenshots/`.

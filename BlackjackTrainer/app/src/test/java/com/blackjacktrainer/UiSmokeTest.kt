@@ -125,4 +125,44 @@ class UiSmokeTest {
         assertTrue(dialog.findViewById<View>(R.id.swH17) != null)
         assertTrue(dialog.findViewById<View>(R.id.swCounting) != null)
     }
+
+    /**
+     * Der Einflug selbst ist unter Robolectric nicht beobachtbar - Animatoren
+     * sind dort abgeschaltet und springen ans Ende. Prüfbar ist aber die
+     * Geometrie: Jede neue Karte muss ihren Flug am Schlitten beginnen, also
+     * oberhalb und rechts von ihrem Platz auf dem Tisch.
+     */
+    @Test
+    fun karteStartetAmSchlitten() {
+        val (activity, binding) = launch()
+        binding.incBetting.btnClearBet.performClick()
+        binding.incBetting.chip25.performClick()
+        binding.incBetting.btnDeal.performClick()
+
+        val hand = binding.playerHands.getChildAt(0) as LinearLayout
+        val cards = hand.findViewById<LinearLayout>(R.id.handCards)
+        assertTrue(cards.childCount >= 2)
+
+        val shoe = IntArray(2)
+        binding.shoeStack.getLocationOnScreen(shoe)
+        assertTrue("Schlitten muss einen Platz auf dem Tisch haben", shoe[0] > 0)
+
+        for (i in 0 until cards.childCount) {
+            val card = cards.getChildAt(i)
+            val settled = IntArray(2)
+            card.getLocationOnScreen(settled)
+
+            activity.placeAtShoe(card)
+
+            // Der Schlitten liegt oben rechts: nach rechts und nach oben
+            assertTrue("Karte $i muss von rechts kommen", card.translationX > 0f)
+            assertTrue("Karte $i muss von oben kommen", card.translationY < 0f)
+            // und zwar über eine spürbare Strecke, nicht nur ein paar Pixel
+            assertTrue("Flugstrecke zu kurz", card.translationY < -100f)
+
+            // Startpunkt liegt exakt auf dem Schlitten
+            assertEquals(shoe[0], settled[0] + card.translationX.toInt())
+            assertEquals(shoe[1], settled[1] + card.translationY.toInt())
+        }
+    }
 }
