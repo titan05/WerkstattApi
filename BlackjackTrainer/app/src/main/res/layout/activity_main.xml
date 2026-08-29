@@ -72,6 +72,21 @@
         </LinearLayout>
 
         <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnLive"
+            android:layout_width="wrap_content"
+            android:layout_height="42dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/btn_outline"
+            android:text="LIVE"
+            android:textAllCaps="false"
+            android:textColor="@color/gold"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:paddingHorizontal="10dp"
+            android:minWidth="0dp"
+            android:stateListAnimator="@null" />
+
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnChart"
             style="?android:attr/borderlessButtonStyle"
             android:layout_width="42dp"

@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true"
+    android:padding="10dp">
+
+    <!-- Kopfzeile: eine Zeile, mehr braucht es hier nicht -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="LIVE"
+            android:textColor="@color/gold"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.15" />
+
+        <TextView
+            android:id="@+id/liveRules"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnToggleCount"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/btn_outline"
+            android:text="Count"
+            android:textAllCaps="false"
+            android:textColor="@color/text_primary"
+            android:textSize="12sp"
+            android:paddingHorizontal="10dp"
+            android:minWidth="0dp"
+            android:stateListAnimator="@null" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/liveSettings"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/btn_outline"
+            android:text="⚙"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:padding="0dp"
+            android:minWidth="0dp"
+            android:stateListAnimator="@null"
+            android:contentDescription="Einstellungen" />
+    </LinearLayout>
+
+    <!-- Die Antwort steht oben, gut sichtbar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical"
+        android:background="@drawable/tip_panel"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/adviceAction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="—"
+            android:textColor="@color/gold"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/adviceReason"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/adviceCountNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/push"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/adviceInsurance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Was bisher auf dem Tisch liegt - füllt den freien Platz -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DEALER"
+                android:textColor="@color/text_muted"
+                android:textSize="9sp"
+                android:letterSpacing="0.14" />
+
+            <FrameLayout
+                android:id="@+id/dealerSlot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:minWidth="60dp"
+                android:minHeight="86dp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="10dp"
+            android:background="#33FFFFFF" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DEINE HAND"
+                android:textColor="@color/text_muted"
+                android:textSize="9sp"
+                android:letterSpacing="0.14" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <HorizontalScrollView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/liveCards"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="86dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical" />
+                </HorizontalScrollView>
+
+                <TextView
+                    android:id="@+id/liveTotal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/badge_round"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="3dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Hi-Lo Zählung, standardmäßig eingeklappt -->
+    <LinearLayout
+        android:id="@+id/countPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical"
+        android:background="@drawable/panel_round"
+        android:padding="8dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RC"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnCountDown"
+                android:layout_width="42dp"
+                android:layout_height="38dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/btn_outline"
+                android:text="−"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:stateListAnimator="@null" />
+
+            <TextView
+                android:id="@+id/countValueLive"
+                android:layout_width="44dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="@color/gold"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnCountUp"
+                android:layout_width="42dp"
+                android:layout_height="38dp"
+                android:background="@drawable/btn_outline"
+                android:text="+"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:stateListAnimator="@null" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Decks"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnDecksDown"
+                android:layout_width="42dp"
+                android:layout_height="38dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/btn_outline"
+                android:text="−"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:stateListAnimator="@null" />
+
+            <TextView
+                android:id="@+id/decksValue"
+                android:layout_width="44dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnDecksUp"
+                android:layout_width="42dp"
+                android:layout_height="38dp"
+                android:background="@drawable/btn_outline"
+                android:text="+"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:stateListAnimator="@null" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/trueCountValue"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnNewShoe"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:background="@drawable/btn_outline"
+                android:text="Neuer Schlitten"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                android:paddingHorizontal="10dp"
+                android:minWidth="0dp"
+                android:stateListAnimator="@null" />
+        </LinearLayout>
+    </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Ansage, was der nächste Tastendruck bedeutet -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="6dp">
+
+        <TextView
+            android:id="@+id/keypadPrompt"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/gold"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/swFromSplit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="aus Split"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Das Tastenfeld: immer an derselben Stelle, große Flächen -->
+    <LinearLayout
+        android:id="@+id/keypadRow1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" />
+
+    <LinearLayout
+        android:id="@+id/keypadRow2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnUndoCard"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:background="@drawable/btn_outline"
+            android:text="Zurück"
+            android:textAllCaps="false"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:stateListAnimator="@null" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnNewHand"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/btn_outline"
+            android:text="Neue Hand"
+            android:textAllCaps="false"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:stateListAnimator="@null" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnNewRound"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/btn_gold"
+            android:text="Neue Runde"
+            android:textAllCaps="false"
+            android:textColor="#0C2A18"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:stateListAnimator="@null" />
+    </LinearLayout>
+</LinearLayout>

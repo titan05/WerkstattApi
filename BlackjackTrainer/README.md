@@ -38,6 +38,21 @@ verdeckt ist, glüht auch nichts.
 **Fehler-Feedback.** Weichst du vom Tipp ab, sagt die App direkt, was besser
 gewesen wäre. Eine Trefferquote in der Fußzeile zeigt, wie sauber du spielst.
 
+**Live-Modus** (Knopf „LIVE" oben). Für den echten Tisch: Ein großes
+Tastenfeld, das immer an derselben Stelle liegt. Der erste Druck ist die
+offene Karte des Dealers, die nächsten sind deine eigenen — die App weiß
+selbst, was gerade dran ist, und sagt es in der Zeile über dem Tastenfeld.
+Drei Antippen bis zur Empfehlung, danach reicht pro gezogener Karte ein
+weiterer Druck. „Zurück" nimmt die letzte Eingabe zurück, „Neue Hand" behält
+die Dealerkarte (für die zweite Hand nach einem Split), „Neue Runde" leert
+alles. Bube, Dame und König werden als 10 eingegeben.
+
+Über „Count" lässt sich eine Zeile für die Hi-Lo-Zählung einblenden: Running
+Count hoch/runter, verbleibende Decks, daraus der True Count. Gezählt wird von
+Hand, denn am Tisch zählt man alle Karten, nicht nur die eigenen — automatisch
+mitgezählte Eingaben ergäben einen falschen Count, der richtig aussieht. Ist
+die Zeile sichtbar, berücksichtigen die Empfehlungen die Abweichungen.
+
 **Strategietabelle.** Über das Symbol oben rechts: die komplette Tabelle für
 harte Hände, Soft-Hände und Paare. Tippe auf ein Feld für die Begründung. Die
 Tabelle wird aus derselben Engine erzeugt wie die Tipps im Spiel und passt sich
@@ -62,8 +77,11 @@ app/src/main/java/com/blackjacktrainer/
     CountStrategy                Hi-Lo-Abweichungen, Versicherung
     BlackjackGame                Ablauf, Splits, Auszahlungen, Statistik
   ui/PlayingCardView             gezeichnete Spielkarte
+  ui/ChipStackView               Betrag als Jetonstapel
   MainActivity                   Spieltisch
+  LiveActivity                   Berater für den echten Tisch
   StrategyActivity               Strategietabelle
+  SettingsDialog                 Tischregeln, von beiden Modi genutzt
 ```
 
 Die Spiellogik hängt nicht am Android-Framework und ist deshalb komplett auf

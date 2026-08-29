@@ -10,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -19,7 +18,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.doOnPreDraw
 import com.blackjacktrainer.databinding.ActivityMainBinding
-import com.blackjacktrainer.databinding.DialogSettingsBinding
 import com.blackjacktrainer.databinding.ViewHandBinding
 import com.blackjacktrainer.game.Action
 import com.blackjacktrainer.game.BlackjackGame
@@ -123,6 +121,7 @@ class MainActivity : AppCompatActivity() {
         btnRevealTip.setOnClickListener { tipRevealed = true; render() }
         btnSettings.setOnClickListener { showSettings() }
         btnChart.setOnClickListener { startActivity(Intent(this@MainActivity, StrategyActivity::class.java)) }
+        btnLive.setOnClickListener { startActivity(Intent(this@MainActivity, LiveActivity::class.java)) }
     }
 
     /**
@@ -658,52 +657,22 @@ class MainActivity : AppCompatActivity() {
     // --------------------------------------------------------- Einstellungen
 
     private fun showSettings() {
-        val dialogBinding = DialogSettingsBinding.inflate(layoutInflater)
-        val deckOptions = listOf(1, 2, 4, 6, 8)
-        dialogBinding.spinnerDecks.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_dropdown_item,
-            deckOptions.map { "$it Deck${if (it == 1) "" else "s"}" }
-        )
-        dialogBinding.spinnerDecks.setSelection(deckOptions.indexOf(prefs.decks).coerceAtLeast(0))
-        dialogBinding.swH17.isChecked = prefs.hitsSoft17
-        dialogBinding.swBj32.isChecked = prefs.blackjack32
-        dialogBinding.swDas.isChecked = prefs.doubleAfterSplit
-        dialogBinding.swSurrender.isChecked = prefs.lateSurrender
-        dialogBinding.swAutoTip.isChecked = prefs.autoTip
-        dialogBinding.swWarn.isChecked = prefs.warnOnMistake
-        dialogBinding.swCounting.isChecked = prefs.counting
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Einstellungen")
-            .setView(dialogBinding.root)
-            .setPositiveButton("Fertig", null)
-            .create()
-
-        dialogBinding.btnResetStats.setOnClickListener {
-            game.stats.reset()
-            prefs.saveStats(game.stats)
-            toast("Statistik zurückgesetzt.")
-            render()
-        }
-        dialogBinding.btnResetBankroll.setOnClickListener {
-            game.bankroll = 1000
-            prefs.bankroll = 1000
-            toast("Guthaben zurückgesetzt.")
-            render()
-        }
-
-        dialog.setOnDismissListener {
-            prefs.decks = deckOptions[dialogBinding.spinnerDecks.selectedItemPosition]
-            prefs.hitsSoft17 = dialogBinding.swH17.isChecked
-            prefs.blackjack32 = dialogBinding.swBj32.isChecked
-            prefs.doubleAfterSplit = dialogBinding.swDas.isChecked
-            prefs.lateSurrender = dialogBinding.swSurrender.isChecked
-            prefs.autoTip = dialogBinding.swAutoTip.isChecked
-            prefs.warnOnMistake = dialogBinding.swWarn.isChecked
-            prefs.counting = dialogBinding.swCounting.isChecked
-
-            val newRules = prefs.rules()
+        SettingsDialog.show(
+            activity = this,
+            prefs = prefs,
+            onResetStats = {
+                game.stats.reset()
+                prefs.saveStats(game.stats)
+                toast("Statistik zurückgesetzt.")
+                render()
+            },
+            onResetBankroll = {
+                game.bankroll = 1000
+                prefs.bankroll = 1000
+                toast("Guthaben zurückgesetzt.")
+                render()
+            }
+        ) { newRules ->
             if (newRules != game.rules) {
                 game.applyRules(newRules)
                 shownCards.clear()
@@ -715,7 +684,6 @@ class MainActivity : AppCompatActivity() {
             tipRevealed = prefs.autoTip
             render()
         }
-        dialog.show()
     }
 
     private fun offerRefill() {

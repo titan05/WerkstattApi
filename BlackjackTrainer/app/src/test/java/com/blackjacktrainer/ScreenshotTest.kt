@@ -6,6 +6,7 @@ import android.os.Looper
 import android.view.View
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.blackjacktrainer.databinding.ActivityMainBinding
+import com.blackjacktrainer.databinding.ActivityLiveBinding
 import com.blackjacktrainer.databinding.ActivityStrategyBinding
 import com.blackjacktrainer.game.BlackjackGame
 import com.blackjacktrainer.game.Card
@@ -142,5 +143,29 @@ class ScreenshotTest {
         capture(binding.root, "07_dealer", settle = false)
 
         capture(binding.root, "08_ergebnis")
+    }
+
+    @Test
+    fun liveModus() {
+        val activity = Robolectric.buildActivity(LiveActivity::class.java).setup().get()
+        val field = LiveActivity::class.java.getDeclaredField("binding")
+        field.isAccessible = true
+        val binding = field.get(activity) as ActivityLiveBinding
+        binding.root.background = activity.getDrawable(R.drawable.bg_felt)
+
+        // 16 gegen eine Zehn eingeben
+        for (label in listOf("10", "10", "6")) {
+            val rows = listOf(binding.keypadRow1, binding.keypadRow2)
+            outer@ for (row in rows) {
+                for (i in 0 until row.childCount) {
+                    val button = row.getChildAt(i) as android.widget.Button
+                    if (button.text.toString() == label) {
+                        button.performClick()
+                        break@outer
+                    }
+                }
+            }
+        }
+        capture(binding.root, "09_live")
     }
 }
