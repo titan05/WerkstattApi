@@ -1,5 +1,7 @@
 package com.blackjacktrainer
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -22,14 +24,18 @@ import com.blackjacktrainer.ui.PlayingCardView
 import java.util.Locale
 
 /**
- * Berater für den echten Tisch. Ein einziges Tastenfeld, das immer an
- * derselben Stelle liegt: Der erste Druck ist die offene Karte des Dealers,
- * die nächsten sind deine eigenen. Drei Antippen bis zur Empfehlung.
+ * Berater für den echten Tisch. Ein einziges Tastenfeld an fester Stelle;
+ * wohin ein Druck geht, zeigt das hervorgehobene Feld - Dealer oder eigene
+ * Hand. Nach der Dealerkarte springt das Ziel von selbst weiter, antippen
+ * wechselt es jederzeit zurück.
  *
  * Gerechnet wird mit derselben Engine wie im Spielmodus, also mit den
  * Tischregeln aus den Einstellungen.
  */
 class LiveActivity : AppCompatActivity() {
+
+    /** Wohin der nächste Tastendruck geht. */
+    private enum class Target { DEALER, PLAYER }
 
     private lateinit var binding: ActivityLiveBinding
     private lateinit var prefs: Prefs
@@ -38,6 +44,7 @@ class LiveActivity : AppCompatActivity() {
     private var dealerUp: Card? = null
     private var hand = Hand()
     private var fromSplit = false
+    private var target = Target.DEALER
 
     private var runningCount = 0
     /** In halben Decks, damit sich in 0,5er-Schritten zählen lässt. */
@@ -61,9 +68,13 @@ class LiveActivity : AppCompatActivity() {
 
         buildKeypad()
 
+        binding.dealerSlotBox.setOnClickListener { target = Target.DEALER; update() }
+        binding.playerSlotBox.setOnClickListener { target = Target.PLAYER; update() }
+
         binding.btnUndoCard.setOnClickListener { undo() }
         binding.btnNewHand.setOnClickListener {
             hand = Hand()
+            target = Target.PLAYER
             update()
         }
         binding.btnNewRound.setOnClickListener { newRound() }
@@ -100,6 +111,8 @@ class LiveActivity : AppCompatActivity() {
                 update()
             }
         }
+
+        update()
     }
 
     override fun onResume() {
@@ -114,13 +127,12 @@ class LiveActivity : AppCompatActivity() {
 
     // -------------------------------------------------------------- Eingabe
 
-    /**
-     * Ein Tastendruck bedeutet immer das, was gerade fehlt: erst die Karte
-     * des Dealers, danach die eigenen. Kein Umschalten nötig.
-     */
+    /** Der Druck landet dort, wo das hervorgehobene Feld ist. */
     private fun onKey(rank: Rank) {
-        if (dealerUp == null) {
+        if (target == Target.DEALER) {
             dealerUp = Card(rank, Suit.KARO)
+            // Die Dealerkarte gibt es nur einmal - danach ist die Hand dran.
+            target = Target.PLAYER
         } else if (hand.cards.size < 11) {
             hand.add(Card(rank, suitFor(hand.cards.size)))
         }
@@ -128,9 +140,13 @@ class LiveActivity : AppCompatActivity() {
     }
 
     private fun undo() {
-        if (hand.cards.isNotEmpty()) {
+        if (target == Target.DEALER) {
+            dealerUp = null
+        } else if (hand.cards.isNotEmpty()) {
             hand.cards.removeAt(hand.cards.size - 1)
         } else {
+            // Die Hand ist schon leer, also zurück zur Dealerkarte
+            target = Target.DEALER
             dealerUp = null
         }
         update()
@@ -140,6 +156,7 @@ class LiveActivity : AppCompatActivity() {
         hand = Hand()
         dealerUp = null
         fromSplit = false
+        target = Target.DEALER
         binding.swFromSplit.isChecked = false
         update()
     }
@@ -174,17 +191,33 @@ class LiveActivity : AppCompatActivity() {
 
     private fun update() {
         binding.liveRules.text = rules.describe()
-        renderPrompt()
+        renderTarget()
         renderTable()
         renderCount()
         renderAdvice()
     }
 
-    private fun renderPrompt() {
+    /** Das Eingabeziel muss auf einen Blick erkennbar sein. */
+    private fun renderTarget() {
+        val dealerActive = target == Target.DEALER
+        binding.dealerSlotBox.setBackgroundResource(
+            if (dealerActive) R.drawable.hand_active else R.drawable.hand_idle
+        )
+        binding.playerSlotBox.setBackgroundResource(
+            if (dealerActive) R.drawable.hand_idle else R.drawable.hand_active
+        )
+
+        val gold = ContextCompat.getColor(this, R.color.gold)
+        val muted = ContextCompat.getColor(this, R.color.text_muted)
+        binding.dealerSlotLabel.text = if (dealerActive) "DEALER ▸ EINGABE" else "DEALER"
+        binding.dealerSlotLabel.setTextColor(if (dealerActive) gold else muted)
+        binding.playerSlotLabel.text = if (dealerActive) "DEINE HAND" else "DEINE HAND ▸ EINGABE"
+        binding.playerSlotLabel.setTextColor(if (dealerActive) muted else gold)
+
         binding.keypadPrompt.text = when {
-            dealerUp == null -> "Was zeigt der Dealer?"
-            hand.cards.isEmpty() -> "Deine erste Karte"
-            hand.cards.size == 1 -> "Deine zweite Karte"
+            dealerActive -> "Karte des Dealers eintippen"
+            hand.cards.isEmpty() -> "Deine erste Karte eintippen"
+            hand.cards.size == 1 -> "Deine zweite Karte eintippen"
             else -> "Gezogene Karte eintippen"
         }
     }
@@ -234,29 +267,44 @@ class LiveActivity : AppCompatActivity() {
     /** Der Count wirkt nur auf die Tipps, wenn er auch geführt wird. */
     private val countingActive: Boolean get() = countVisible
 
+    // ---------------------------------------------------------- Entscheidung
+
+    /**
+     * Klartext statt Fachbegriff und dazu die Farbe aus der Strategietabelle -
+     * die Entscheidung soll man aus einem Meter Entfernung erkennen.
+     */
+    private fun bannerFor(action: Action): Pair<String, Int> = when (action) {
+        Action.HIT -> "KARTE NEHMEN" to Color.parseColor("#C0392B")
+        Action.STAND -> "STEHEN BLEIBEN" to Color.parseColor("#1E8449")
+        Action.DOUBLE -> "VERDOPPELN" to Color.parseColor("#1F6FB2")
+        Action.SPLIT -> "TEILEN" to Color.parseColor("#7D3C98")
+        Action.SURRENDER -> "AUFGEBEN" to Color.parseColor("#5D6D7E")
+    }
+
     private fun renderAdvice() {
         binding.adviceCountNote.visibility = View.GONE
         binding.adviceInsurance.visibility = View.GONE
 
         val up = dealerUp
         if (up == null) {
-            setAdvice("—", "Tippe die offene Karte des Dealers ein.")
+            setBanner("—", "Tippe die offene Karte des Dealers ein.", NEUTRAL)
             return
         }
         if (hand.cards.size < 2) {
-            setAdvice("—", "Tippe deine beiden Karten ein.")
+            setBanner("—", "Tippe deine beiden Karten ein.", NEUTRAL)
             showInsuranceNote(up)
             return
         }
         if (hand.isBusted) {
-            setAdvice("Überkauft", "Mit ${hand.total} ist die Hand verloren.")
+            setBanner("ÜBERKAUFT", "Mit ${hand.total} ist die Hand verloren.", BUSTED)
             return
         }
         if (hand.cards.size == 2 && hand.total == 21 && !fromSplit) {
             val payout = if (rules.blackjackPays3to2) "3:2" else "6:5"
-            setAdvice(
-                "Blackjack",
-                "Zahlt $payout. Nimm kein Even Money, auch wenn der Dealer ein Ass zeigt."
+            setBanner(
+                "BLACKJACK",
+                "Zahlt $payout. Nimm kein Even Money, auch wenn der Dealer ein Ass zeigt.",
+                BLACKJACK
             )
             return
         }
@@ -276,7 +324,8 @@ class LiveActivity : AppCompatActivity() {
             advice = CountStrategy.apply(advice, hand, up, trueCount, options)
         }
 
-        setAdvice(advice.action.label, advice.reason)
+        val (label, color) = bannerFor(advice.action)
+        setBanner(label, advice.reason, color)
         advice.countNote?.let {
             binding.adviceCountNote.text = it
             binding.adviceCountNote.visibility = View.VISIBLE
@@ -297,8 +346,20 @@ class LiveActivity : AppCompatActivity() {
         binding.adviceInsurance.visibility = View.VISIBLE
     }
 
-    private fun setAdvice(action: String, reason: String) {
+    private fun setBanner(action: String, reason: String, color: Int) {
         binding.adviceAction.text = action
         binding.adviceReason.text = reason
+        val background = GradientDrawable()
+        background.cornerRadius = dp(16).toFloat()
+        background.setColor(color)
+        // Helle Kante, damit sich auch die grüne Tafel vom Filz abhebt
+        background.setStroke(dp(2), Color.parseColor("#59FFFFFF"))
+        binding.advicePanel.background = background
+    }
+
+    private companion object {
+        val NEUTRAL: Int = Color.parseColor("#1E4430")
+        val BUSTED: Int = Color.parseColor("#7A1F1F")
+        val BLACKJACK: Int = Color.parseColor("#B8890F")
     }
 }

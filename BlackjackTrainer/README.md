@@ -47,6 +47,17 @@ weiterer Druck. „Zurück" nimmt die letzte Eingabe zurück, „Neue Hand" beh�
 die Dealerkarte (für die zweite Hand nach einem Split), „Neue Runde" leert
 alles. Bube, Dame und König werden als 10 eingegeben.
 
+Welches Feld die Eingabe bekommt, ist immer sichtbar: Dealer und eigene Hand
+sind zwei getrennte Felder, das aktive hat einen goldenen Rahmen und die
+Beschriftung „▸ EINGABE". Antippen wechselt das Ziel — praktisch, um eine
+falsch eingetippte Dealerkarte zu korrigieren, ohne die Hand neu einzugeben.
+„Zurück" wirkt auf das ausgewählte Feld.
+
+Die Entscheidung erscheint als farbige Tafel in Klartext („KARTE NEHMEN",
+„STEHEN BLEIBEN", „VERDOPPELN", „TEILEN", „AUFGEBEN"), in denselben Farben
+wie die Strategietabelle — grün für Stehen, rot für Ziehen, blau für
+Verdoppeln, violett für Teilen, grau für Aufgeben.
+
 Über „Count" lässt sich eine Zeile für die Hi-Lo-Zählung einblenden: Running
 Count hoch/runter, verbleibende Decks, daraus der True Count. Gezählt wird von
 Hand, denn am Tisch zählt man alle Karten, nicht nur die eigenen — automatisch

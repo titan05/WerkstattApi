@@ -59,30 +59,31 @@
             android:contentDescription="Einstellungen" />
     </LinearLayout>
 
-    <!-- Die Antwort steht oben, gut sichtbar -->
+    <!-- Die Entscheidung: farbige Tafel, Farbe wie in der Strategietabelle -->
     <LinearLayout
+        android:id="@+id/advicePanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:orientation="vertical"
-        android:background="@drawable/tip_panel"
-        android:padding="12dp">
+        android:padding="14dp">
 
         <TextView
             android:id="@+id/adviceAction"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="—"
-            android:textColor="@color/gold"
-            android:textSize="32sp"
-            android:textStyle="bold" />
+            android:textColor="#FFFFFF"
+            android:textSize="34sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.02" />
 
         <TextView
             android:id="@+id/adviceReason"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textColor="@color/text_primary"
+            android:layout_marginTop="3dp"
+            android:textColor="#E8FFFFFF"
             android:textSize="13sp" />
 
         <TextView
@@ -90,9 +91,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:textColor="@color/push"
+            android:textColor="#FFFFFF"
             android:textSize="12sp"
-            android:textStyle="italic"
+            android:textStyle="bold"
             android:visibility="gone" />
 
         <TextView
@@ -100,12 +101,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:textColor="@color/text_muted"
+            android:textColor="#D6FFFFFF"
             android:textSize="12sp"
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- Was bisher auf dem Tisch liegt - füllt den freien Platz -->
+    <!-- Zwei Felder, eines davon ist das Eingabeziel. Antippen wechselt. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -113,232 +114,237 @@
         android:orientation="vertical"
         android:gravity="center_vertical">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
-
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center_horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="DEALER"
-                android:textColor="@color/text_muted"
-                android:textSize="9sp"
-                android:letterSpacing="0.14" />
-
-            <FrameLayout
-                android:id="@+id/dealerSlot"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:minWidth="60dp"
-                android:minHeight="86dp" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="1dp"
-            android:layout_height="56dp"
-            android:layout_marginHorizontal="10dp"
-            android:background="#33FFFFFF" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="DEINE HAND"
-                android:textColor="@color/text_muted"
-                android:textSize="9sp"
-                android:letterSpacing="0.14" />
+            android:orientation="horizontal">
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:id="@+id/dealerSlotBox"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:background="@drawable/hand_idle"
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:id="@+id/dealerSlotLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DEALER"
+                    android:textColor="@color/text_muted"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.12" />
+
+                <FrameLayout
+                    android:id="@+id/dealerSlot"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:minWidth="62dp"
+                    android:minHeight="88dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/playerSlotBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:orientation="vertical"
+                android:background="@drawable/hand_idle"
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/playerSlotLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="DEINE HAND"
+                        android:textColor="@color/text_muted"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.12" />
+
+                    <TextView
+                        android:id="@+id/liveTotal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/badge_round"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="2dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <HorizontalScrollView
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_marginTop="5dp"
                     android:scrollbars="none">
 
                     <LinearLayout
                         android:id="@+id/liveCards"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:minHeight="86dp"
+                        android:minHeight="88dp"
                         android:orientation="horizontal"
                         android:gravity="center_vertical" />
                 </HorizontalScrollView>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Hi-Lo Zählung, einklappbar -->
+        <LinearLayout
+            android:id="@+id/countPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:background="@drawable/panel_round"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
                 <TextView
-                    android:id="@+id/liveTotal"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:background="@drawable/badge_round"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="3dp"
+                    android:text="RC"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnCountDown"
+                    android:layout_width="42dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="4dp"
+                    android:background="@drawable/btn_outline"
+                    android:text="−"
+                    android:textAllCaps="false"
                     android:textColor="@color/text_primary"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
+                    android:padding="0dp"
+                    android:minWidth="0dp"
+                    android:stateListAnimator="@null" />
+
+                <TextView
+                    android:id="@+id/countValueLive"
+                    android:layout_width="44dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="@color/gold"
+                    android:textSize="17sp"
                     android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnCountUp"
+                    android:layout_width="42dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/btn_outline"
+                    android:text="+"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:padding="0dp"
+                    android:minWidth="0dp"
+                    android:stateListAnimator="@null" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:text="Decks"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnDecksDown"
+                    android:layout_width="42dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="4dp"
+                    android:background="@drawable/btn_outline"
+                    android:text="−"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:padding="0dp"
+                    android:minWidth="0dp"
+                    android:stateListAnimator="@null" />
+
+                <TextView
+                    android:id="@+id/decksValue"
+                    android:layout_width="44dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnDecksUp"
+                    android:layout_width="42dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/btn_outline"
+                    android:text="+"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:padding="0dp"
+                    android:minWidth="0dp"
+                    android:stateListAnimator="@null" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/trueCountValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnNewShoe"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:background="@drawable/btn_outline"
+                    android:text="Neuer Schlitten"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp"
+                    android:paddingHorizontal="10dp"
+                    android:minWidth="0dp"
+                    android:stateListAnimator="@null" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Hi-Lo Zählung, standardmäßig eingeklappt -->
-    <LinearLayout
-        android:id="@+id/countPanel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="vertical"
-        android:background="@drawable/panel_round"
-        android:padding="8dp"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="RC"
-                android:textColor="@color/text_muted"
-                android:textSize="12sp" />
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnCountDown"
-                android:layout_width="42dp"
-                android:layout_height="38dp"
-                android:layout_marginStart="4dp"
-                android:background="@drawable/btn_outline"
-                android:text="−"
-                android:textAllCaps="false"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:stateListAnimator="@null" />
-
-            <TextView
-                android:id="@+id/countValueLive"
-                android:layout_width="44dp"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:textColor="@color/gold"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnCountUp"
-                android:layout_width="42dp"
-                android:layout_height="38dp"
-                android:background="@drawable/btn_outline"
-                android:text="+"
-                android:textAllCaps="false"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:stateListAnimator="@null" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:text="Decks"
-                android:textColor="@color/text_muted"
-                android:textSize="12sp" />
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnDecksDown"
-                android:layout_width="42dp"
-                android:layout_height="38dp"
-                android:layout_marginStart="4dp"
-                android:background="@drawable/btn_outline"
-                android:text="−"
-                android:textAllCaps="false"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:stateListAnimator="@null" />
-
-            <TextView
-                android:id="@+id/decksValue"
-                android:layout_width="44dp"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnDecksUp"
-                android:layout_width="42dp"
-                android:layout_height="38dp"
-                android:background="@drawable/btn_outline"
-                android:text="+"
-                android:textAllCaps="false"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:stateListAnimator="@null" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/trueCountValue"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnNewShoe"
-                android:layout_width="wrap_content"
-                android:layout_height="38dp"
-                android:background="@drawable/btn_outline"
-                android:text="Neuer Schlitten"
-                android:textAllCaps="false"
-                android:textColor="@color/text_primary"
-                android:textSize="12sp"
-                android:paddingHorizontal="10dp"
-                android:minWidth="0dp"
-                android:stateListAnimator="@null" />
-        </LinearLayout>
-    </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- Ansage, was der nächste Tastendruck bedeutet -->
+    <!-- Ansage, wohin der nächste Tastendruck geht -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

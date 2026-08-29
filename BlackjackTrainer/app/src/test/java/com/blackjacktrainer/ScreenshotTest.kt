@@ -154,18 +154,25 @@ class ScreenshotTest {
         binding.root.background = activity.getDrawable(R.drawable.bg_felt)
 
         // 16 gegen eine Zehn eingeben
-        for (label in listOf("10", "10", "6")) {
-            val rows = listOf(binding.keypadRow1, binding.keypadRow2)
-            outer@ for (row in rows) {
-                for (i in 0 until row.childCount) {
-                    val button = row.getChildAt(i) as android.widget.Button
-                    if (button.text.toString() == label) {
-                        button.performClick()
-                        break@outer
-                    }
+        for (label in listOf("10", "10", "6")) tapLive(binding, label)
+        capture(binding.root, "09_live")
+
+        // Zweite Entscheidung in anderer Farbe: 20 gegen 6 heißt stehen
+        binding.btnNewRound.performClick()
+        for (label in listOf("6", "10", "10")) tapLive(binding, label)
+        capture(binding.root, "10_live_stehen")
+    }
+
+    private fun tapLive(binding: ActivityLiveBinding, label: String) {
+        val rows = listOf(binding.keypadRow1, binding.keypadRow2)
+        for (row in rows) {
+            for (i in 0 until row.childCount) {
+                val button = row.getChildAt(i) as android.widget.Button
+                if (button.text.toString() == label) {
+                    button.performClick()
+                    return
                 }
             }
         }
-        capture(binding.root, "09_live")
     }
 }
