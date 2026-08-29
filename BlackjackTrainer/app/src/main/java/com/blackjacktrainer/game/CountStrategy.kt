@@ -76,21 +76,17 @@ object CountStrategy {
         if (!possible) return basic
 
         val direction = if (trueCount >= dev.index) "ab" else "unter"
-        val note = "Count-Abweichung: $total gegen ${BasicStrategy.upName(up)} - " +
-            "$direction True Count ${BasicStrategy.fmt(dev.index)} gilt " +
-            "\"${target.label}\" statt \"${basic.action.label}\". " +
-            "Aktueller True Count: ${BasicStrategy.fmt(trueCount)}."
+        val note = "Abweichung $direction TC ${BasicStrategy.fmt(dev.index)}: " +
+            "${target.label} statt ${basic.action.label} (jetzt ${BasicStrategy.fmt(trueCount)})"
 
         val reason = when (target) {
-            Action.STAND -> "Bei diesem Count sind überdurchschnittlich viele Zehnerkarten " +
-                "im Schlitten: Du überkaufst dich häufiger und der Dealer ebenso. " +
-                "Deshalb bleibst du hier stehen."
-            Action.HIT -> "Bei diesem Count sind viele kleine Karten übrig: Du triffst " +
-                "häufiger, und der Dealer überkauft seltener. Deshalb ziehst du hier."
-            Action.DOUBLE -> "Der hohe Count bedeutet mehr Zehner im Schlitten - genau die " +
-                "Karten, die diese Hand stark machen. Deshalb ist Verdoppeln jetzt profitabel."
-            Action.SPLIT -> "Bei diesem Count werden aus zwei Zehnen zwei sehr starke Hände. " +
-                "Rechnerisch korrekt, aber am echten Tisch sehr auffällig."
+            Action.STAND -> "Viele Zehner im Schlitten - du überkaufst öfter, der Dealer auch."
+            Action.HIT -> "Viele kleine Karten übrig - du triffst öfter, der Dealer " +
+                "überkauft seltener."
+            Action.DOUBLE -> "Hoher Count heißt mehr Zehner - genau die Karten, die diese " +
+                "Hand stark machen."
+            Action.SPLIT -> "Aus zwei Zehnen werden zwei sehr starke Hände. Rechnerisch " +
+                "korrekt, am Tisch aber auffällig."
             Action.SURRENDER -> basic.reason
         }
         return Advice(target, reason, note)
@@ -101,16 +97,15 @@ object CountStrategy {
         if (countingEnabled && trueCount != null && trueCount >= 3.0) {
             return Advice(
                 Action.STAND, // steht hier für "Ja, versichern"
-                "Versicherung nehmen: Bei einem True Count von ${BasicStrategy.fmt(trueCount)} " +
-                    "sind genug Zehner im Schlitten. Erst ab +3 dreht sich der Vorteil bei dieser Wette.",
-                "Count-Abweichung: Versicherung ab True Count +3"
+                "Ab True Count +3 sind genug Zehner im Schlitten - erst dann lohnt sie sich.",
+                "Count-Abweichung: Versicherung ab TC +3 " +
+                    "(jetzt ${BasicStrategy.fmt(trueCount)})"
             )
         }
         return Advice(
             Action.HIT, // steht hier für "Nein, keine Versicherung"
-            "Keine Versicherung. Sie ist eine eigenständige Wette mit rund 7 % Hausvorteil - " +
-                "auch dann, wenn du selbst einen Blackjack hast. \"Even Money\" ist derselbe " +
-                "schlechte Deal in hübsch."
+            "Eigenständige Wette mit rund 7 % Hausvorteil - auch mit eigenem Blackjack. " +
+                "\"Even Money\" ist derselbe schlechte Deal in hübsch."
         )
     }
 
@@ -123,11 +118,10 @@ object CountStrategy {
     fun betHint(trueCount: Double, unit: Int): String {
         val units = betUnits(trueCount)
         return if (units <= 1) {
-            "True Count ${BasicStrategy.fmt(trueCount)}: Mindesteinsatz spielen " +
-                "(${unit} · 1 = ${unit})."
+            "TC ${BasicStrategy.fmt(trueCount)}: Mindesteinsatz ($unit)."
         } else {
-            "True Count ${BasicStrategy.fmt(trueCount)}: Der Schlitten ist zu deinen Gunsten - " +
-                "$units Einheiten setzen (${unit} · $units = ${unit * units})."
+            "TC ${BasicStrategy.fmt(trueCount)}: Schlitten zu deinen Gunsten - " +
+                "$units Einheiten (${unit * units})."
         }
     }
 }

@@ -22,9 +22,10 @@ Verdoppeln, Aufgeben, Versicherung, Blackjack zahlt 3:2.
 
 **Tipps mit Begründung.** Vor jeder Entscheidung sagt die App, was die
 Basisstrategie vorschreibt, und erklärt in einem Satz, warum — nicht nur
-"Stehen", sondern *warum* Stehen gegen eine 6 richtig ist. Wahlweise
-automatisch oder erst auf Knopfdruck ("Zeigen"), damit du dich selbst prüfen
-kannst.
+"Stehen", sondern *warum* Stehen gegen eine 6 richtig ist. Der Button der
+empfohlenen Aktion glüht dabei golden auf. Wahlweise automatisch oder erst auf
+Knopfdruck ("Zeigen"), damit du dich selbst prüfen kannst — solange der Tipp
+verdeckt ist, glüht auch nichts.
 
 **Fehler-Feedback.** Weichst du vom Tipp ab, sagt die App direkt, was besser
 gewesen wäre. Eine Trefferquote in der Fußzeile zeigt, wie sauber du spielst.

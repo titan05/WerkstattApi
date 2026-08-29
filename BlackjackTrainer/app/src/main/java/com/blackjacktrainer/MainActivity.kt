@@ -1,11 +1,14 @@
 package com.blackjacktrainer
 
+import android.animation.ValueAnimator
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -38,6 +41,9 @@ class MainActivity : AppCompatActivity() {
     private var tipRevealed = false
     private var feedback: Pair<Boolean, String>? = null
 
+    /** Puls des hervorgehobenen Buttons. */
+    private var glowAnimator: ValueAnimator? = null
+
     private val money: NumberFormat = NumberFormat.getIntegerInstance(Locale.GERMAN)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,8 +61,14 @@ class MainActivity : AppCompatActivity() {
         render()
     }
 
+    override fun onResume() {
+        super.onResume()
+        render()
+    }
+
     override fun onPause() {
         super.onPause()
+        stopGlow()
         prefs.bankroll = game.bankroll
         prefs.saveStats(game.stats)
     }
@@ -188,6 +200,84 @@ class MainActivity : AppCompatActivity() {
         renderPanels()
         renderTip()
         renderStats()
+        renderGlow()
+    }
+
+    // ------------------------------------------------------------ Hervorheben
+
+    private fun actionButtons(): List<Button> = with(binding.incActions) {
+        listOf(btnHit, btnStand, btnDouble, btnSplit, btnSurrender)
+    }
+
+    private fun insuranceButtons(): List<Button> = with(binding.incInsurance) {
+        listOf(btnInsuranceYes, btnInsuranceNo)
+    }
+
+    private fun stopGlow() {
+        glowAnimator?.cancel()
+        glowAnimator = null
+        for (button in actionButtons()) {
+            button.setBackgroundResource(R.drawable.btn_light)
+            button.scaleX = 1f
+            button.scaleY = 1f
+        }
+        for (button in insuranceButtons()) {
+            button.setBackgroundResource(R.drawable.btn_outline)
+            button.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
+            button.scaleX = 1f
+            button.scaleY = 1f
+        }
+    }
+
+    /** Lässt den Button der empfohlenen Aktion glühen - aber nur, wenn der
+     *  Tipp auch sichtbar ist, sonst wäre die Selbstkontrolle sinnlos. */
+    private fun renderGlow() {
+        stopGlow()
+        if (!prefs.autoTip && !tipRevealed) return
+
+        val target: Button = when (game.state) {
+            GameState.PLAYER_TURN -> {
+                val advice = game.advice(prefs.counting) ?: return
+                with(binding.incActions) {
+                    when (advice.action) {
+                        Action.HIT -> btnHit
+                        Action.STAND -> btnStand
+                        Action.DOUBLE -> btnDouble
+                        Action.SPLIT -> btnSplit
+                        Action.SURRENDER -> btnSurrender
+                    }
+                }
+            }
+            GameState.INSURANCE -> {
+                val advice = CountStrategy.insuranceAdvice(
+                    if (prefs.counting) game.shoe.trueCount else null,
+                    prefs.counting
+                )
+                if (advice.action == Action.STAND) {
+                    binding.incInsurance.btnInsuranceYes
+                } else {
+                    binding.incInsurance.btnInsuranceNo
+                }
+            }
+            else -> return
+        }
+        if (!target.isEnabled) return
+
+        target.setBackgroundResource(R.drawable.btn_glow)
+        if (target in insuranceButtons()) target.setTextColor(Color.parseColor("#0C2A18"))
+
+        glowAnimator = ValueAnimator.ofFloat(1f, 1.04f).apply {
+            duration = 800
+            repeatMode = ValueAnimator.REVERSE
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            addUpdateListener {
+                val scale = it.animatedValue as Float
+                target.scaleX = scale
+                target.scaleY = scale
+            }
+            start()
+        }
     }
 
     private fun renderCount() {
@@ -351,15 +441,13 @@ class MainActivity : AppCompatActivity() {
                 binding.tipReason.text = if (prefs.counting) {
                     CountStrategy.betHint(game.shoe.trueCount, 25)
                 } else {
-                    "Setze konstant den gleichen Betrag - die Basisstrategie senkt den " +
-                        "Hausvorteil auf etwa 0,5 %, aber sie macht das Spiel nicht gewinnbringend. " +
-                        "Regeln: ${game.rules.describe()}"
+                    "Immer gleich viel setzen. Tisch: ${game.rules.describe()}"
                 }
             }
             GameState.INSURANCE -> {
                 if (!tipRevealed && !prefs.autoTip) {
                     binding.tipAction.text = "Verdeckt"
-                    binding.tipReason.text = "Tippe auf „Zeigen“, um die Empfehlung zu sehen."
+                    binding.tipReason.text = "Antippen, um die Empfehlung zu sehen."
                 } else {
                     val advice = CountStrategy.insuranceAdvice(
                         if (prefs.counting) game.shoe.trueCount else null,
@@ -377,7 +465,7 @@ class MainActivity : AppCompatActivity() {
             GameState.PLAYER_TURN -> {
                 if (!tipRevealed && !prefs.autoTip) {
                     binding.tipAction.text = "Verdeckt"
-                    binding.tipReason.text = "Entscheide selbst - oder tippe auf „Zeigen“."
+                    binding.tipReason.text = "Entscheide selbst - oder lass dir den Tipp zeigen."
                 } else {
                     val advice = game.advice(prefs.counting)
                     if (advice == null) {
@@ -402,16 +490,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun roundSummaryHint(): String {
         val dealerText = if (game.dealer.isBusted) {
-            "Der Dealer hat sich mit ${game.dealer.total} überkauft."
+            "Dealer überkauft mit ${game.dealer.total}."
         } else {
-            "Der Dealer steht auf ${game.dealer.total}."
+            "Dealer steht auf ${game.dealer.total}."
         }
         val accuracy = game.stats.accuracy
         val extra = when {
-            game.stats.decisions < 5 -> "Spiel ein paar Runden - danach siehst du hier deine Trefferquote."
-            accuracy >= 95 -> "Deine Quote liegt bei $accuracy % - das ist Casino-Niveau."
-            accuracy >= 85 -> "Deine Quote liegt bei $accuracy %. Sieh dir die Strategietabelle oben rechts an."
-            else -> "Deine Quote liegt bei $accuracy %. Schalte „Tipp automatisch anzeigen“ ein und spiel ein paar Runden mit."
+            game.stats.decisions < 5 -> "Noch ein paar Runden für deine Trefferquote."
+            accuracy >= 95 -> "Trefferquote $accuracy % - Casino-Niveau."
+            accuracy >= 85 -> "Trefferquote $accuracy % - die Tabelle oben rechts hilft."
+            else -> "Trefferquote $accuracy % - spiel eine Weile mit eingeblendeten Tipps."
         }
         return "$dealerText $extra"
     }

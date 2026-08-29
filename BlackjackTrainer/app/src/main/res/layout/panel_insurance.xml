@@ -41,10 +41,10 @@
             android:layout_height="48dp"
             android:layout_weight="1"
             android:layout_marginStart="6dp"
-            android:background="@drawable/btn_gold"
+            android:background="@drawable/btn_outline"
             android:text="Nein"
             android:textAllCaps="false"
-            android:textColor="#0C2A18"
+            android:textColor="@color/text_primary"
             android:textSize="15sp"
             android:textStyle="bold"
             android:stateListAnimator="@null" />
