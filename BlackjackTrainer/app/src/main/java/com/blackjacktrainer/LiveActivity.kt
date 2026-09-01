@@ -72,11 +72,6 @@ class LiveActivity : AppCompatActivity() {
         binding.playerSlotBox.setOnClickListener { target = Target.PLAYER; update() }
 
         binding.btnUndoCard.setOnClickListener { undo() }
-        binding.btnNewHand.setOnClickListener {
-            hand = Hand()
-            target = Target.PLAYER
-            update()
-        }
         binding.btnNewRound.setOnClickListener { newRound() }
         binding.swFromSplit.setOnCheckedChangeListener { _, checked ->
             fromSplit = checked
@@ -152,6 +147,10 @@ class LiveActivity : AppCompatActivity() {
         update()
     }
 
+    /**
+     * Leert den Tisch komplett - auch die Dealerkarte - und stellt die
+     * Eingabe wieder auf den Dealer. Jede neue Hand beginnt also gleich.
+     */
     private fun newRound() {
         hand = Hand()
         dealerUp = null
@@ -167,7 +166,7 @@ class LiveActivity : AppCompatActivity() {
             val row = rows[index / 5]
             val button = AppCompatButton(this)
             button.text = rank.label
-            button.textSize = 20f
+            button.textSize = 21f
             button.isAllCaps = false
             button.setPadding(0, 0, 0, 0)
             button.minWidth = 0
@@ -175,7 +174,7 @@ class LiveActivity : AppCompatActivity() {
             button.stateListAnimator = null
             button.setBackgroundResource(R.drawable.btn_light)
             button.setTextColor(ContextCompat.getColor(this, R.color.btn_action_text))
-            val params = LinearLayout.LayoutParams(0, dp(58), 1f)
+            val params = LinearLayout.LayoutParams(0, dp(62), 1f)
             params.marginStart = if (row.childCount == 0) 0 else dp(6)
             button.layoutParams = params
             button.setOnClickListener { onKey(rank) }

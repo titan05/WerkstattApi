@@ -43,14 +43,15 @@ Tastenfeld, das immer an derselben Stelle liegt. Der erste Druck ist die
 offene Karte des Dealers, die nächsten sind deine eigenen — die App weiß
 selbst, was gerade dran ist, und sagt es in der Zeile über dem Tastenfeld.
 Drei Antippen bis zur Empfehlung, danach reicht pro gezogener Karte ein
-weiterer Druck. „Zurück" nimmt die letzte Eingabe zurück, „Neue Hand" behält
-die Dealerkarte (für die zweite Hand nach einem Split), „Neue Runde" leert
-alles. Bube, Dame und König werden als 10 eingegeben.
+weiterer Druck. „Zurück" nimmt die letzte Eingabe zurück, „Neue Runde" leert
+den Tisch komplett — auch die Dealerkarte — und stellt die Eingabe wieder auf
+den Dealer. Bube, Dame und König werden als 10 eingegeben.
 
 Welches Feld die Eingabe bekommt, ist immer sichtbar: Dealer und eigene Hand
-sind zwei getrennte Felder, das aktive hat einen goldenen Rahmen und die
-Beschriftung „▸ EINGABE". Antippen wechselt das Ziel — praktisch, um eine
-falsch eingetippte Dealerkarte zu korrigieren, ohne die Hand neu einzugeben.
+sind zwei Felder untereinander, wie am Tisch — Dealer oben, deine Hand
+darunter. Das aktive hat einen goldenen Rahmen und die Beschriftung
+„▸ EINGABE". Antippen wechselt das Ziel — praktisch, um eine falsch
+eingetippte Dealerkarte zu korrigieren, ohne die Hand neu einzugeben.
 „Zurück" wirkt auf das ausgewählte Feld.
 
 Die Entscheidung erscheint als farbige Tafel in Klartext („KARTE NEHMEN",

@@ -106,7 +106,8 @@
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- Zwei Felder, eines davon ist das Eingabeziel. Antippen wechselt. -->
+    <!-- Wie am Tisch: Dealer oben, eigene Hand darunter.
+         Das hervorgehobene Feld bekommt die Eingabe, Antippen wechselt. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -115,96 +116,88 @@
         android:gravity="center_vertical">
 
         <LinearLayout
+            android:id="@+id/dealerSlotBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:background="@drawable/hand_idle"
+            android:padding="8dp"
+            android:clickable="true"
+            android:focusable="true">
 
-            <LinearLayout
-                android:id="@+id/dealerSlotBox"
+            <TextView
+                android:id="@+id/dealerSlotLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal"
-                android:background="@drawable/hand_idle"
-                android:padding="8dp"
-                android:clickable="true"
-                android:focusable="true">
+                android:text="DEALER"
+                android:textColor="@color/text_muted"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12" />
+
+            <FrameLayout
+                android:id="@+id/dealerSlot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:minWidth="62dp"
+                android:minHeight="88dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/playerSlotBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:background="@drawable/hand_idle"
+            android:padding="8dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
                 <TextView
-                    android:id="@+id/dealerSlotLabel"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/playerSlotLabel"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="DEALER"
+                    android:layout_weight="1"
+                    android:text="DEINE HAND"
                     android:textColor="@color/text_muted"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:letterSpacing="0.12" />
 
-                <FrameLayout
-                    android:id="@+id/dealerSlot"
+                <TextView
+                    android:id="@+id/liveTotal"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:minWidth="62dp"
-                    android:minHeight="88dp" />
+                    android:background="@drawable/badge_round"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="2dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/playerSlotBox"
-                android:layout_width="0dp"
+            <HorizontalScrollView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:orientation="vertical"
-                android:background="@drawable/hand_idle"
-                android:padding="8dp"
-                android:clickable="true"
-                android:focusable="true">
+                android:layout_marginTop="5dp"
+                android:scrollbars="none">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:id="@+id/liveCards"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:minHeight="88dp"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:id="@+id/playerSlotLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="DEINE HAND"
-                        android:textColor="@color/text_muted"
-                        android:textSize="10sp"
-                        android:textStyle="bold"
-                        android:letterSpacing="0.12" />
-
-                    <TextView
-                        android:id="@+id/liveTotal"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/badge_round"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="2dp"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <HorizontalScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:scrollbars="none">
-
-                    <LinearLayout
-                        android:id="@+id/liveCards"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:minHeight="88dp"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical" />
-                </HorizontalScrollView>
-            </LinearLayout>
+                    android:gravity="center_vertical" />
+            </HorizontalScrollView>
         </LinearLayout>
 
         <!-- Hi-Lo Zählung, einklappbar -->
@@ -393,39 +386,26 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnUndoCard"
             android:layout_width="0dp"
-            android:layout_height="46dp"
+            android:layout_height="62dp"
             android:layout_weight="1"
             android:background="@drawable/btn_outline"
             android:text="Zurück"
             android:textAllCaps="false"
             android:textColor="@color/text_primary"
-            android:textSize="13sp"
-            android:stateListAnimator="@null" />
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnNewHand"
-            android:layout_width="0dp"
-            android:layout_height="46dp"
-            android:layout_weight="1"
-            android:layout_marginStart="6dp"
-            android:background="@drawable/btn_outline"
-            android:text="Neue Hand"
-            android:textAllCaps="false"
-            android:textColor="@color/text_primary"
-            android:textSize="13sp"
+            android:textSize="17sp"
             android:stateListAnimator="@null" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnNewRound"
             android:layout_width="0dp"
-            android:layout_height="46dp"
+            android:layout_height="62dp"
             android:layout_weight="1"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="8dp"
             android:background="@drawable/btn_gold"
             android:text="Neue Runde"
             android:textAllCaps="false"
             android:textColor="#0C2A18"
-            android:textSize="13sp"
+            android:textSize="17sp"
             android:textStyle="bold"
             android:stateListAnimator="@null" />
     </LinearLayout>

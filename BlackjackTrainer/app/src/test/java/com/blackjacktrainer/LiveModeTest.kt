@@ -154,18 +154,23 @@ class LiveModeTest {
     }
 
     @Test
-    fun neueHandBehaeltDenDealerNeueRundeNicht() {
+    fun neueRundeLeertAuchDenDealerUndBeginntWiederDort() {
         val (_, binding) = launch()
         tap(binding, "6")
         tap(binding, "8")
         tap(binding, "8")
 
-        binding.btnNewHand.performClick()
-        assertEquals(1, binding.dealerSlot.childCount)
-        assertEquals(0, binding.liveCards.childCount)
-
         binding.btnNewRound.performClick()
         assertEquals(0, binding.dealerSlot.childCount)
+        assertEquals(0, binding.liveCards.childCount)
+        // Die Eingabe steht wieder beim Dealer
+        assertTrue(binding.dealerSlotLabel.text.toString().contains("EINGABE"))
+        assertTrue(binding.keypadPrompt.text.toString().contains("Dealer"))
+
+        // und der erste Druck landet folgerichtig dort
+        tap(binding, "9")
+        assertEquals(1, binding.dealerSlot.childCount)
+        assertEquals(0, binding.liveCards.childCount)
     }
 
     @Test
