@@ -32,20 +32,6 @@
             android:textSize="11sp" />
 
         <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnToggleCount"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/btn_outline"
-            android:text="Count"
-            android:textAllCaps="false"
-            android:textColor="@color/text_primary"
-            android:textSize="12sp"
-            android:paddingHorizontal="10dp"
-            android:minWidth="0dp"
-            android:stateListAnimator="@null" />
-
-        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/liveSettings"
             android:layout_width="36dp"
             android:layout_height="36dp"
@@ -85,16 +71,6 @@
             android:layout_marginTop="3dp"
             android:textColor="#E8FFFFFF"
             android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/adviceCountNote"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
 
         <TextView
             android:id="@+id/adviceInsurance"
@@ -151,141 +127,6 @@
             android:layout_marginTop="8dp"
             android:orientation="horizontal" />
 
-        <!-- Hi-Lo Zählung, einklappbar -->
-        <LinearLayout
-            android:id="@+id/countPanel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="vertical"
-            android:background="@drawable/panel_round"
-            android:padding="8dp"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="RC"
-                    android:textColor="@color/text_muted"
-                    android:textSize="12sp" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnCountDown"
-                    android:layout_width="42dp"
-                    android:layout_height="38dp"
-                    android:layout_marginStart="4dp"
-                    android:background="@drawable/btn_outline"
-                    android:text="−"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:padding="0dp"
-                    android:minWidth="0dp"
-                    android:stateListAnimator="@null" />
-
-                <TextView
-                    android:id="@+id/countValueLive"
-                    android:layout_width="44dp"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textColor="@color/gold"
-                    android:textSize="17sp"
-                    android:textStyle="bold" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnCountUp"
-                    android:layout_width="42dp"
-                    android:layout_height="38dp"
-                    android:background="@drawable/btn_outline"
-                    android:text="+"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:padding="0dp"
-                    android:minWidth="0dp"
-                    android:stateListAnimator="@null" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:text="Decks"
-                    android:textColor="@color/text_muted"
-                    android:textSize="12sp" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnDecksDown"
-                    android:layout_width="42dp"
-                    android:layout_height="38dp"
-                    android:layout_marginStart="4dp"
-                    android:background="@drawable/btn_outline"
-                    android:text="−"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:padding="0dp"
-                    android:minWidth="0dp"
-                    android:stateListAnimator="@null" />
-
-                <TextView
-                    android:id="@+id/decksValue"
-                    android:layout_width="44dp"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnDecksUp"
-                    android:layout_width="42dp"
-                    android:layout_height="38dp"
-                    android:background="@drawable/btn_outline"
-                    android:text="+"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:padding="0dp"
-                    android:minWidth="0dp"
-                    android:stateListAnimator="@null" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/trueCountValue"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnNewShoe"
-                    android:layout_width="wrap_content"
-                    android:layout_height="38dp"
-                    android:background="@drawable/btn_outline"
-                    android:text="Neuer Schlitten"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_primary"
-                    android:textSize="12sp"
-                    android:paddingHorizontal="10dp"
-                    android:minWidth="0dp"
-                    android:stateListAnimator="@null" />
-            </LinearLayout>
-        </LinearLayout>
     </LinearLayout>
 
     <!-- Ansage, wohin der nächste Tastendruck geht -->
@@ -329,39 +170,39 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnUndoCard"
             android:layout_width="0dp"
-            android:layout_height="62dp"
+            android:layout_height="74dp"
             android:layout_weight="1"
             android:background="@drawable/btn_outline"
             android:text="Zurück"
             android:textAllCaps="false"
             android:textColor="@color/text_primary"
-            android:textSize="16sp"
+            android:textSize="19sp"
             android:stateListAnimator="@null" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnSplit"
             android:layout_width="0dp"
-            android:layout_height="62dp"
+            android:layout_height="74dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:background="@drawable/btn_outline"
             android:text="Teilen"
             android:textAllCaps="false"
             android:textColor="@color/text_primary"
-            android:textSize="16sp"
+            android:textSize="19sp"
             android:stateListAnimator="@null" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnNewRound"
             android:layout_width="0dp"
-            android:layout_height="62dp"
+            android:layout_height="74dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:background="@drawable/btn_gold"
             android:text="Neue Runde"
             android:textAllCaps="false"
             android:textColor="#0C2A18"
-            android:textSize="16sp"
+            android:textSize="19sp"
             android:textStyle="bold"
             android:stateListAnimator="@null" />
     </LinearLayout>

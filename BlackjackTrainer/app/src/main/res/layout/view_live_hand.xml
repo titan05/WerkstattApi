@@ -39,18 +39,15 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <HorizontalScrollView
+    <!-- Bewusst ohne ScrollView: die würde die Berührung schlucken, sodass
+         nur der Rand der Box anklickbar wäre. Die Karten werden stattdessen
+         so skaliert, dass sie immer hineinpassen. -->
+    <LinearLayout
+        android:id="@+id/liveHandCards"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="5dp"
-        android:scrollbars="none">
-
-        <LinearLayout
-            android:id="@+id/liveHandCards"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minHeight="88dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical" />
-    </HorizontalScrollView>
+        android:minHeight="88dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical" />
 </LinearLayout>

@@ -20,9 +20,9 @@ import androidx.core.view.doOnPreDraw
 import com.blackjacktrainer.databinding.ActivityMainBinding
 import com.blackjacktrainer.databinding.ViewHandBinding
 import com.blackjacktrainer.game.Action
+import com.blackjacktrainer.game.BasicStrategy
 import com.blackjacktrainer.game.BlackjackGame
 import com.blackjacktrainer.game.Card
-import com.blackjacktrainer.game.CountStrategy
 import com.blackjacktrainer.game.GameState
 import com.blackjacktrainer.game.Hand
 import com.blackjacktrainer.ui.PlayingCardView
@@ -177,17 +177,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun decideInsurance(take: Boolean) {
-        val advice = CountStrategy.insuranceAdvice(
-            if (prefs.counting) game.shoe.trueCount else null,
-            prefs.counting
-        )
-        val recommendTake = advice.action == Action.STAND
+        val advice = BasicStrategy.insuranceAdvice()
         game.stats.decisions++
-        if (take == recommendTake) {
+        if (!take) {
             game.stats.correctDecisions++
-            feedback = true to if (take) "Versicherung genommen - hier korrekt." else "Richtig: keine Versicherung."
+            feedback = true to "Richtig: keine Versicherung."
         } else {
-            feedback = false to if (recommendTake) "Hier wäre die Versicherung korrekt gewesen." else "Versicherung ist auf Dauer ein Verlustgeschäft."
+            feedback = false to "Versicherung ist auf Dauer ein Verlustgeschäft."
             if (prefs.warnOnMistake) toast(advice.reason)
         }
         game.resolveInsurance(take)
@@ -207,7 +203,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (!allowed) return
 
-        val advice = game.advice(prefs.counting)
+        val advice = game.advice()
         if (advice != null) {
             game.recordDecision(action, advice.action)
             feedback = if (action == advice.action) {
@@ -236,7 +232,6 @@ class MainActivity : AppCompatActivity() {
     private fun render() {
         binding.bankrollValue.text = money.format(game.bankroll)
         dealStagger = 0
-        renderCount()
         renderShoe()
         // Spielerhände zuerst: beim Austeilen fliegen deine Karten vor denen
         // des Dealers ein, so wie am Tisch.
@@ -284,7 +279,7 @@ class MainActivity : AppCompatActivity() {
 
         val target: Button = when (game.state) {
             GameState.PLAYER_TURN -> {
-                val advice = game.advice(prefs.counting) ?: return
+                val advice = game.advice() ?: return
                 with(binding.incActions) {
                     when (advice.action) {
                         Action.HIT -> btnHit
@@ -295,17 +290,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-            GameState.INSURANCE -> {
-                val advice = CountStrategy.insuranceAdvice(
-                    if (prefs.counting) game.shoe.trueCount else null,
-                    prefs.counting
-                )
-                if (advice.action == Action.STAND) {
-                    binding.incInsurance.btnInsuranceYes
-                } else {
-                    binding.incInsurance.btnInsuranceNo
-                }
-            }
+            GameState.INSURANCE -> binding.incInsurance.btnInsuranceNo
             else -> return
         }
         if (!target.isEnabled) return
@@ -330,24 +315,6 @@ class MainActivity : AppCompatActivity() {
     private fun renderShoe() {
         val decks = String.format(Locale.GERMAN, "%.1f", game.shoe.decksRemaining)
         binding.shoeLabel.text = if (game.shoe.cutCardReached) "mischen" else decks
-    }
-
-    private fun renderCount() {
-        if (!prefs.counting) {
-            binding.countBox.visibility = View.GONE
-            return
-        }
-        binding.countBox.visibility = View.VISIBLE
-        val rc = game.shoe.runningCount
-        val tc = game.shoe.trueCount
-        binding.countValue.text = "${if (rc > 0) "+$rc" else "$rc"} / ${String.format(Locale.GERMAN, "%.1f", tc)}"
-        binding.countValue.setTextColor(
-            when {
-                tc >= 2 -> ContextCompat.getColor(this, R.color.win)
-                tc <= -2 -> ContextCompat.getColor(this, R.color.lose)
-                else -> Color.WHITE
-            }
-        )
     }
 
     private fun cardWidthDp(): Float = when {
@@ -490,33 +457,20 @@ class MainActivity : AppCompatActivity() {
         val showButton = !prefs.autoTip && !tipRevealed &&
             (game.state == GameState.PLAYER_TURN || game.state == GameState.INSURANCE)
         binding.btnRevealTip.visibility = visibleIf(showButton)
-        binding.tipCountNote.visibility = View.GONE
 
         when (game.state) {
             GameState.BETTING -> {
                 binding.tipAction.text = "Einsatz"
-                binding.tipReason.text = if (prefs.counting) {
-                    CountStrategy.betHint(game.shoe.trueCount, 25)
-                } else {
+                binding.tipReason.text =
                     "Immer gleich viel setzen. Tisch: ${game.rules.describe()}"
-                }
             }
             GameState.INSURANCE -> {
                 if (!tipRevealed && !prefs.autoTip) {
                     binding.tipAction.text = "Verdeckt"
                     binding.tipReason.text = "Antippen, um die Empfehlung zu sehen."
                 } else {
-                    val advice = CountStrategy.insuranceAdvice(
-                        if (prefs.counting) game.shoe.trueCount else null,
-                        prefs.counting
-                    )
-                    binding.tipAction.text =
-                        if (advice.action == Action.STAND) "Versichern" else "Nicht versichern"
-                    binding.tipReason.text = advice.reason
-                    advice.countNote?.let {
-                        binding.tipCountNote.text = it
-                        binding.tipCountNote.visibility = View.VISIBLE
-                    }
+                    binding.tipAction.text = "Nicht versichern"
+                    binding.tipReason.text = BasicStrategy.insuranceAdvice().reason
                 }
             }
             GameState.PLAYER_TURN -> {
@@ -524,17 +478,13 @@ class MainActivity : AppCompatActivity() {
                     binding.tipAction.text = "Verdeckt"
                     binding.tipReason.text = "Entscheide selbst - oder lass dir den Tipp zeigen."
                 } else {
-                    val advice = game.advice(prefs.counting)
+                    val advice = game.advice()
                     if (advice == null) {
                         binding.tipAction.text = "—"
                         binding.tipReason.text = ""
                     } else {
                         binding.tipAction.text = advice.action.label
                         binding.tipReason.text = advice.reason
-                        advice.countNote?.let {
-                            binding.tipCountNote.text = it
-                            binding.tipCountNote.visibility = View.VISIBLE
-                        }
                     }
                 }
             }

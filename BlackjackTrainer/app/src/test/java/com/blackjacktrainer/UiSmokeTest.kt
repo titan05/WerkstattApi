@@ -132,7 +132,10 @@ class UiSmokeTest {
         assertTrue(dialog != null && dialog.isShowing)
         // Die Regel-Schalter aus dem Dialog sind da
         assertTrue(dialog.findViewById<View>(R.id.swH17) != null)
-        assertTrue(dialog.findViewById<View>(R.id.swCounting) != null)
+        assertTrue(dialog.findViewById<View>(R.id.swSurrender) != null)
+        // Deck-Auswahl als Knopfreihe: fünf Möglichkeiten
+        val picker = dialog.findViewById<android.widget.LinearLayout>(R.id.deckPicker)
+        assertEquals(5, picker.childCount)
     }
 
     /**

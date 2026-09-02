@@ -260,5 +260,13 @@ object BasicStrategy {
         else -> "einer $up"
     }
 
-    fun fmt(d: Double): String = String.format("%+.1f", d)
+    /**
+     * Die Versicherung ist eine eigenständige Wette und ohne Kartenzählen
+     * immer schlecht - deshalb gibt es hier nur eine Antwort.
+     */
+    fun insuranceAdvice(): Advice = Advice(
+        Action.HIT, // steht hier für "Nein, keine Versicherung"
+        "Eigenständige Wette mit rund 7 % Hausvorteil - auch mit eigenem " +
+            "Blackjack. \"Even Money\" ist derselbe schlechte Deal in hübsch."
+    )
 }

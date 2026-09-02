@@ -4,13 +4,7 @@ import kotlin.math.max
 import kotlin.math.round
 import kotlin.random.Random
 
-/**
- * Kartenschlitten mit mehreren Decks und Cut-Card.
- *
- * Der laufende Hi-Lo-Count zählt nur Karten, die auch tatsächlich offen
- * auf dem Tisch lagen - die verdeckte Karte des Dealers wird erst beim
- * Aufdecken mitgezählt, genau wie am echten Tisch.
- */
+/** Kartenschlitten mit mehreren Decks und Cut-Card. */
 class Shoe(
     numDecks: Int,
     private var penetration: Double = 0.75,
@@ -19,9 +13,6 @@ class Shoe(
     private val cards = ArrayDeque<Card>()
 
     var numDecks: Int = numDecks
-        private set
-
-    var runningCount: Int = 0
         private set
 
     var dealtCount: Int = 0
@@ -53,33 +44,17 @@ class Shoe(
         }
         fresh.shuffle(random)
         cards.addAll(fresh)
-        runningCount = 0
         dealtCount = 0
         cutCardReached = false
     }
 
     val cardsRemaining: Int get() = cards.size
 
-    /** Verbleibende Decks, auf halbe Decks gerundet - so schätzt man am Tisch. */
+    /** Verbleibende Decks, auf halbe Decks gerundet. */
     val decksRemaining: Double
         get() = max(0.5, round((cardsRemaining / 52.0) * 2.0) / 2.0)
 
-    val trueCount: Double get() = runningCount / decksRemaining
-
-    /** Zieht eine offene Karte (wird sofort gezählt). */
-    fun deal(): Card {
-        val card = drawRaw()
-        runningCount += card.rank.hiLo
-        return card
-    }
-
-    /** Zieht eine verdeckte Karte - noch nicht zählen. */
-    fun dealHidden(): Card = drawRaw()
-
-    /** Deckt eine zuvor verdeckte Karte auf und nimmt sie in den Count. */
-    fun reveal(card: Card) {
-        runningCount += card.rank.hiLo
-    }
+    fun deal(): Card = drawRaw()
 
     /** Legt Karten in der angegebenen Reihenfolge nach oben - nur für Tests. */
     fun stackTop(top: List<Card>) {

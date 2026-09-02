@@ -154,20 +154,16 @@ class BlackjackGameTest {
     }
 
     @Test
-    fun verdeckteKarteWirdErstBeimAufdeckenGezaehlt() {
-        // 5 (+1), 6 (+1), 5 (+1) offen, König (-1) verdeckt
+    fun dieVerdeckteKarteBleibtBisZumDealerZugVerborgen() {
         val game = game(stack = listOf(c(Rank.FIVE), c(Rank.SIX), c(Rank.FIVE), c(Rank.KING), c(Rank.FOUR)))
-        // Wäre der König mitgezählt worden, stünde hier +2 statt +3.
-        assertEquals(3, game.shoe.runningCount)
         assertTrue(game.holeHidden)
         assertEquals(1, game.dealer.cards.size)
 
         game.stand()
         game.playDealerOut()
-        // Dealer deckt den König auf (16) und zieht die 4: 3 - 1 + 1 = 3
+        // Dealer deckt den König auf (16) und zieht die 4
         assertFalse(game.holeHidden)
         assertEquals(20, game.dealer.total)
-        assertEquals(3, game.shoe.runningCount)
     }
 
     @Test
@@ -193,7 +189,7 @@ class BlackjackGameTest {
     @Test
     fun statistikZaehltRichtigeUndFalscheEntscheidungen() {
         val game = game(stack = listOf(c(Rank.TEN), c(Rank.SIX), c(Rank.SIX), c(Rank.NINE), c(Rank.TWO), c(Rank.KING)))
-        val advice = game.advice(countingEnabled = false)!!
+        val advice = game.advice()!!
         game.recordDecision(advice.action, advice.action)
         assertEquals(1, game.stats.decisions)
         assertEquals(1, game.stats.correctDecisions)

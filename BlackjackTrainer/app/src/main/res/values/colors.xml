@@ -19,4 +19,5 @@
     <color name="chip_purple">#6A1B9A</color>
     <color name="btn_action">#F5F7FA</color>
     <color name="btn_action_text">#0C2A18</color>
+    <color name="dialog_bg">#123626</color>
 </resources>

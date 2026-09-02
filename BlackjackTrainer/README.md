@@ -65,21 +65,10 @@ Die Entscheidung erscheint als farbige Tafel in Klartext („KARTE NEHMEN",
 wie die Strategietabelle — grün für Stehen, rot für Ziehen, blau für
 Verdoppeln, violett für Teilen, grau für Aufgeben.
 
-Über „Count" lässt sich eine Zeile für die Hi-Lo-Zählung einblenden: Running
-Count hoch/runter, verbleibende Decks, daraus der True Count. Gezählt wird von
-Hand, denn am Tisch zählt man alle Karten, nicht nur die eigenen — automatisch
-mitgezählte Eingaben ergäben einen falschen Count, der richtig aussieht. Ist
-die Zeile sichtbar, berücksichtigen die Empfehlungen die Abweichungen.
-
 **Strategietabelle.** Über das Symbol oben rechts: die komplette Tabelle für
 harte Hände, Soft-Hände und Paare. Tippe auf ein Feld für die Begründung. Die
 Tabelle wird aus derselben Engine erzeugt wie die Tipps im Spiel und passt sich
 automatisch an die eingestellten Tischregeln an.
-
-**Kartenzählen (optional).** Hi-Lo-Modus mit Running Count und True Count. Die
-verdeckte Karte des Dealers wird — wie am echten Tisch — erst beim Aufdecken
-mitgezählt. Die Tipps berücksichtigen dann die Abweichungen der
-"Illustrious 18" und die Versicherung ab True Count +3.
 
 **Einstellbare Tischregeln.** Anzahl Decks, H17/S17, Blackjack 3:2 oder 6:5,
 Verdoppeln nach Teilen, Aufgeben. Die Tipps ändern sich entsprechend — bei
@@ -90,9 +79,8 @@ H17 wird Soft 18 gegen die 2 verdoppelt, bei S17 nicht.
 ```
 app/src/main/java/com/blackjacktrainer/
   game/          Spiellogik, ohne Android-Abhängigkeiten
-    Card, Shoe, Hand, Rules      Karten, Schlitten, Hi-Lo-Count
+    Card, Shoe, Hand, Rules      Karten, Schlitten, Tischregeln
     BasicStrategy                Basisstrategie + Begründungstexte
-    CountStrategy                Hi-Lo-Abweichungen, Versicherung
     BlackjackGame                Ablauf, Splits, Auszahlungen, Statistik
   ui/PlayingCardView             gezeichnete Spielkarte
   ui/ChipStackView               Betrag als Jetonstapel
@@ -115,7 +103,7 @@ export ANDROID_HOME=/pfad/zum/android-sdk
 
 Die Tests vergleichen die Engine Zelle für Zelle mit der veröffentlichten
 Multi-Deck-Basisstrategie (harte Hände, Soft-Hände, Paare, jeweils für H17 und
-S17), prüfen Auszahlungen, Splits, Versicherung und Kartenzählung und spielen
+S17), prüfen Auszahlungen, Splits und Versicherung und spielen
 die Oberfläche mit Robolectric 100 Runden lang durch.
 
 Robolectric schaltet Animatoren ab, der Einflug ist dort also nicht

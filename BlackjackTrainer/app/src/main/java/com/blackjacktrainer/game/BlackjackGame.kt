@@ -130,7 +130,7 @@ class BlackjackGame(var rules: Rules, var bankroll: Int = 1000) {
         hand.add(shoe.deal())
         dealer.add(shoe.deal())          // offene Karte
         hand.add(shoe.deal())
-        holeCard = shoe.dealHidden()     // verdeckte Karte, noch nicht gezählt
+        holeCard = shoe.deal()           // verdeckte Karte
         holeHidden = true
 
         if (dealerUpcard?.rank == Rank.ACE) {
@@ -154,7 +154,6 @@ class BlackjackGame(var rules: Rules, var bankroll: Int = 1000) {
         val hole = holeCard ?: return
         if (!holeHidden) return
         dealer.add(hole)
-        shoe.reveal(hole)
         holeHidden = false
     }
 
@@ -443,18 +442,12 @@ class BlackjackGame(var rules: Rules, var bankroll: Int = 1000) {
 
     // ------------------------------------------------------------- Beratung
 
-    /** Empfehlung für die aktuelle Hand - optional mit Count-Abweichungen. */
-    fun advice(countingEnabled: Boolean): Advice? {
+    /** Empfehlung für die aktuelle Hand. */
+    fun advice(): Advice? {
         val hand = activeHand ?: return null
         val up = dealerUpcard ?: return null
         if (state != GameState.PLAYER_TURN) return null
-        val opts = options()
-        val basic = BasicStrategy.advise(hand, up, rules, opts)
-        return if (countingEnabled) {
-            CountStrategy.apply(basic, hand, up, shoe.trueCount, opts)
-        } else {
-            basic
-        }
+        return BasicStrategy.advise(hand, up, rules, options())
     }
 
     fun recordDecision(chosen: Action, recommended: Action) {

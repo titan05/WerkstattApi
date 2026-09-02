@@ -2,7 +2,10 @@ package com.blackjacktrainer
 
 import android.graphics.drawable.GradientDrawable
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
+import android.widget.HorizontalScrollView
+import android.widget.ScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -293,22 +296,6 @@ class LiveModeTest {
     }
 
     @Test
-    fun countPanelLaesstSichEinUndAusblenden() {
-        val (_, binding) = launch()
-        val before = binding.countPanel.visibility
-        binding.btnToggleCount.performClick()
-        assertTrue(binding.countPanel.visibility != before)
-
-        // Mit sichtbarem Count greifen die Abweichungen: 16 gegen 10 bei
-        // hohem True Count heißt stehen statt aufgeben.
-        if (binding.countPanel.visibility != View.VISIBLE) binding.btnToggleCount.performClick()
-        repeat(12) { binding.btnCountUp.performClick() }
-        tapAll(binding, "10", "10", "6")
-        assertEquals("STEHEN BLEIBEN", action(binding))
-        assertEquals(View.VISIBLE, binding.adviceCountNote.visibility)
-    }
-
-    @Test
     fun jedeEntscheidungHatIhreEigeneFarbe() {
         val (_, binding) = launch()
 
@@ -329,5 +316,52 @@ class LiveModeTest {
         val hit = bannerColor(binding)
 
         assertEquals("Farben müssen sich unterscheiden", 4, listOf(stand, surrender, double, hit).toSet().size)
+    }
+
+    /**
+     * Kein Kind der Handbox darf Berührungen abfangen - sonst reagiert nur
+     * der Rand um die Karten herum und nicht die ganze Fläche.
+     */
+    private fun assertNothingStealsTouches(view: View) {
+        if (view is ViewGroup) {
+            assertFalse(
+                "${view.javaClass.simpleName} fängt Berührungen ab",
+                view is ScrollView || view is HorizontalScrollView
+            )
+            for (i in 0 until view.childCount) {
+                val child = view.getChildAt(i)
+                assertFalse("Ein Kind der Box ist klickbar", child.isClickable)
+                assertNothingStealsTouches(child)
+            }
+        }
+    }
+
+    @Test
+    fun dieGanzeHandboxIstAnklickbar() {
+        val (_, binding) = launch()
+        tapAll(binding, "8", "6", "8")
+        binding.btnSplit.performClick()
+
+        for (index in 0..1) {
+            val box = handBox(binding, index)
+            assertTrue("Die Box selbst muss klickbar sein", box.isClickable)
+            assertNothingStealsTouches(box)
+        }
+
+        // Auswählen über die Box funktioniert weiterhin
+        handBox(binding, 1).performClick()
+        assertEquals("Karte für Hand 2 eintippen", binding.keypadPrompt.text.toString())
+    }
+
+    @Test
+    fun vieleKartenPassenWeiterhinInDieBox() {
+        val (_, binding) = launch()
+        tapAll(binding, "8", "6", "8")
+        binding.btnSplit.performClick()
+        // Hand 1 auf sechs Karten bringen
+        tapAll(binding, "2", "2", "2", "2", "2")
+        assertEquals(6, handCards(binding, 0).childCount)
+        // Alle Karten hängen in der Box, nichts ist weggescrollt
+        assertNothingStealsTouches(handBox(binding, 0))
     }
 }

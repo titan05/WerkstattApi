@@ -168,6 +168,10 @@ class ScreenshotTest {
         binding.btnSplit.performClick()
         tapLive(binding, "3")
         capture(binding.root, "11_live_split")
+
+        // Volles Blatt: die Karten müssen ohne Scrollen in die Box passen
+        for (label in listOf("2", "2", "2", "2")) tapLive(binding, label)
+        capture(binding.root, "12_live_viele_karten")
     }
 
     private fun tapLive(binding: ActivityLiveBinding, label: String) {
@@ -180,6 +184,36 @@ class ScreenshotTest {
                     return
                 }
             }
+        }
+    }
+
+    /**
+     * Der Einstellungsdialog. Das App-Theme ist die dunkle
+     * MaterialComponents-Variante - ohne eigenes Dialog-Theme stünde hier
+     * dunkler Text auf dunklem Grund.
+     */
+    @Test
+    fun einstellungen() {
+        val activity = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        val field = MainActivity::class.java.getDeclaredField("binding")
+        field.isAccessible = true
+        val binding = field.get(activity) as ActivityMainBinding
+
+        binding.btnSettings.performClick()
+        val dialog = org.robolectric.shadows.ShadowDialog.getLatestDialog()
+        val decor = dialog.window!!.decorView
+
+        val width = 411 * 3
+        val height = 891 * 3
+        decor.measure(
+            View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.AT_MOST),
+            View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.AT_MOST)
+        )
+        decor.layout(0, 0, decor.measuredWidth, decor.measuredHeight)
+        val bitmap = Bitmap.createBitmap(decor.measuredWidth, decor.measuredHeight, Bitmap.Config.ARGB_8888)
+        decor.draw(Canvas(bitmap))
+        File(outputDir, "13_einstellungen.png").outputStream().use {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }
 }

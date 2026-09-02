@@ -13,31 +13,27 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="TISCHREGELN"
-            android:textColor="#7A7A7A"
+            android:textColor="@color/text_muted"
             android:textSize="11sp"
             android:letterSpacing="0.14"
             android:textStyle="bold" />
 
-        <LinearLayout
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:layout_marginTop="12dp"
+            android:text="Anzahl Decks"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Anzahl Decks"
-                android:textColor="#1A1A1A"
-                android:textSize="15sp" />
-
-            <Spinner
-                android:id="@+id/spinnerDecks"
-                android:layout_width="110dp"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
+        <!-- Knopfreihe statt Auswahlliste: Deren Aufklappmenü würde die
+             Farben des Dialogs nicht erben. -->
+        <LinearLayout
+            android:id="@+id/deckPicker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/swH17"
@@ -45,7 +41,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="Dealer zieht bei Soft 17 (H17)"
-            android:textColor="#1A1A1A"
+            android:textColor="@color/text_primary"
             android:textSize="15sp" />
 
         <androidx.appcompat.widget.SwitchCompat
@@ -54,7 +50,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="Blackjack zahlt 3:2 (sonst 6:5)"
-            android:textColor="#1A1A1A"
+            android:textColor="@color/text_primary"
             android:textSize="15sp" />
 
         <androidx.appcompat.widget.SwitchCompat
@@ -63,7 +59,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="Verdoppeln nach Teilen (DAS)"
-            android:textColor="#1A1A1A"
+            android:textColor="@color/text_primary"
             android:textSize="15sp" />
 
         <androidx.appcompat.widget.SwitchCompat
@@ -72,20 +68,20 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="Aufgeben erlaubt (Late Surrender)"
-            android:textColor="#1A1A1A"
+            android:textColor="@color/text_primary"
             android:textSize="15sp" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginVertical="16dp"
-            android:background="#22000000" />
+            android:background="#33FFFFFF" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="TRAINING"
-            android:textColor="#7A7A7A"
+            android:textColor="@color/text_muted"
             android:textSize="11sp"
             android:letterSpacing="0.14"
             android:textStyle="bold" />
@@ -96,7 +92,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="Tipp automatisch anzeigen"
-            android:textColor="#1A1A1A"
+            android:textColor="@color/text_primary"
             android:textSize="15sp" />
 
         <androidx.appcompat.widget.SwitchCompat
@@ -105,31 +101,14 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="Warnen, wenn ich vom Tipp abweiche"
-            android:textColor="#1A1A1A"
+            android:textColor="@color/text_primary"
             android:textSize="15sp" />
-
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/swCounting"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="Kartenzählen üben (Hi-Lo)"
-            android:textColor="#1A1A1A"
-            android:textSize="15sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Zeigt Running Count und True Count an und passt die Tipps mit den Abweichungen der „Illustrious 18“ an."
-            android:textColor="#7A7A7A"
-            android:textSize="12sp" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginVertical="16dp"
-            android:background="#22000000" />
+            android:background="#33FFFFFF" />
 
         <Button
             android:id="@+id/btnResetStats"

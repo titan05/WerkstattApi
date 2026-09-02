@@ -20,15 +20,7 @@ enum class Rank(val label: String, val value: Int) {
     JACK("J", 10),
     QUEEN("Q", 10),
     KING("K", 10),
-    ACE("A", 11);
-
-    /** Hi-Lo Zählwert: 2-6 = +1, 7-9 = 0, 10/Bild/Ass = -1 */
-    val hiLo: Int
-        get() = when (this) {
-            TWO, THREE, FOUR, FIVE, SIX -> 1
-            SEVEN, EIGHT, NINE -> 0
-            else -> -1
-        }
+    ACE("A", 11)
 }
 
 data class Card(val rank: Rank, val suit: Suit) {

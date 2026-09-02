@@ -40,37 +40,6 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/countBox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center_horizontal"
-            android:background="@drawable/badge_round"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp"
-            android:layout_marginEnd="8dp"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/countLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="RC / TC"
-                android:textColor="@color/text_muted"
-                android:textSize="9sp"
-                android:letterSpacing="0.1" />
-
-            <TextView
-                android:id="@+id/countValue"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 / 0.0"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnLive"
             android:layout_width="wrap_content"
@@ -286,15 +255,6 @@
             android:textColor="@color/text_muted"
             android:textSize="12sp" />
 
-        <TextView
-            android:id="@+id/tipCountNote"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/push"
-            android:textSize="11sp"
-            android:textStyle="italic"
-            android:visibility="gone" />
     </LinearLayout>
 
     <!-- Steuerung -->

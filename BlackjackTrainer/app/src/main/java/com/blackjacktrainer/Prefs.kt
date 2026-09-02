@@ -37,10 +37,6 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("warn", true)
         set(v) = sp.edit().putBoolean("warn", v).apply()
 
-    var counting: Boolean
-        get() = sp.getBoolean("counting", false)
-        set(v) = sp.edit().putBoolean("counting", v).apply()
-
     var bankroll: Int
         get() = sp.getInt("bankroll", 1000)
         set(v) = sp.edit().putInt("bankroll", v).apply()

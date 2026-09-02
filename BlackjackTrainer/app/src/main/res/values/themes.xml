@@ -8,4 +8,21 @@
         <item name="android:navigationBarColor">@color/felt_edge</item>
         <item name="android:windowBackground">@drawable/bg_felt</item>
     </style>
+
+    <!-- Das App-Theme ist die dunkle MaterialComponents-Variante; ohne eigenes
+         Dialog-Theme bekommt der Einstellungsdialog deren graues Standardgrau.
+         Hier stattdessen der Filz der App mit goldenen Bedienelementen. -->
+    <style name="Theme.BlackjackTrainer.Dialog" parent="Theme.MaterialComponents.Dialog.Alert">
+        <item name="android:background">@color/dialog_bg</item>
+        <item name="colorAccent">@color/gold</item>
+        <item name="colorPrimary">@color/gold</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_muted</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Theme.BlackjackTrainer.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Theme.BlackjackTrainer.DialogButton</item>
+    </style>
+
+    <style name="Theme.BlackjackTrainer.DialogButton" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/gold</item>
+    </style>
 </resources>
