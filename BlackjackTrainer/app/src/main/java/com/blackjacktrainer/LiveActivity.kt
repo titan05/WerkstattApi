@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
 import com.blackjacktrainer.databinding.ActivityLiveBinding
+import com.blackjacktrainer.databinding.ViewLiveHandBinding
 import com.blackjacktrainer.game.Action
 import com.blackjacktrainer.game.Advice
 import com.blackjacktrainer.game.BasicStrategy
@@ -24,10 +25,14 @@ import com.blackjacktrainer.ui.PlayingCardView
 import java.util.Locale
 
 /**
- * Berater für den echten Tisch. Ein einziges Tastenfeld an fester Stelle;
- * wohin ein Druck geht, zeigt das hervorgehobene Feld - Dealer oder eigene
- * Hand. Nach der Dealerkarte springt das Ziel von selbst weiter, antippen
- * wechselt es jederzeit zurück.
+ * Berater für den echten Tisch.
+ *
+ * Eingegeben wird in der Reihenfolge, in der am Tisch ausgeteilt wird: deine
+ * erste Karte, dann die offene Karte des Dealers, dann deine zweite. Wohin
+ * der nächste Druck geht, zeigt das hervorgehobene Feld; antippen wechselt.
+ *
+ * "Teilen" macht aus einer Hand zwei. Die Hände stehen dann nebeneinander,
+ * Hand 1 rechts - so wie sie am Tisch gespielt werden.
  *
  * Gerechnet wird mit derselben Engine wie im Spielmodus, also mit den
  * Tischregeln aus den Einstellungen.
@@ -35,16 +40,16 @@ import java.util.Locale
 class LiveActivity : AppCompatActivity() {
 
     /** Wohin der nächste Tastendruck geht. */
-    private enum class Target { DEALER, PLAYER }
+    private enum class Target { DEALER, HAND }
 
     private lateinit var binding: ActivityLiveBinding
     private lateinit var prefs: Prefs
     private lateinit var rules: Rules
 
     private var dealerUp: Card? = null
-    private var hand = Hand()
-    private var fromSplit = false
-    private var target = Target.DEALER
+    private val hands = mutableListOf(Hand())
+    private var activeHand = 0
+    private var target = Target.HAND
 
     private var runningCount = 0
     /** In halben Decks, damit sich in 0,5er-Schritten zählen lässt. */
@@ -69,14 +74,10 @@ class LiveActivity : AppCompatActivity() {
         buildKeypad()
 
         binding.dealerSlotBox.setOnClickListener { target = Target.DEALER; update() }
-        binding.playerSlotBox.setOnClickListener { target = Target.PLAYER; update() }
 
         binding.btnUndoCard.setOnClickListener { undo() }
+        binding.btnSplit.setOnClickListener { splitActiveHand() }
         binding.btnNewRound.setOnClickListener { newRound() }
-        binding.swFromSplit.setOnCheckedChangeListener { _, checked ->
-            fromSplit = checked
-            update()
-        }
 
         binding.btnToggleCount.setOnClickListener {
             countVisible = !countVisible
@@ -122,14 +123,23 @@ class LiveActivity : AppCompatActivity() {
 
     // -------------------------------------------------------------- Eingabe
 
-    /** Der Druck landet dort, wo das hervorgehobene Feld ist. */
+    private val hand: Hand get() = hands[activeHand]
+
+    /**
+     * Der Druck landet im hervorgehobenen Feld. Nach deiner ersten Karte
+     * springt die Eingabe von selbst zum Dealer und danach wieder zurück -
+     * die Reihenfolge, in der am Tisch ausgeteilt wird.
+     */
     private fun onKey(rank: Rank) {
         if (target == Target.DEALER) {
             dealerUp = Card(rank, Suit.KARO)
-            // Die Dealerkarte gibt es nur einmal - danach ist die Hand dran.
-            target = Target.PLAYER
-        } else if (hand.cards.size < 11) {
+            target = Target.HAND
+        } else {
+            if (hand.cards.size >= 11) return
             hand.add(Card(rank, suitFor(hand.cards.size)))
+            if (dealerUp == null && hands.size == 1 && hand.cards.size == 1) {
+                target = Target.DEALER
+            }
         }
         update()
     }
@@ -139,24 +149,39 @@ class LiveActivity : AppCompatActivity() {
             dealerUp = null
         } else if (hand.cards.isNotEmpty()) {
             hand.cards.removeAt(hand.cards.size - 1)
-        } else {
-            // Die Hand ist schon leer, also zurück zur Dealerkarte
+        } else if (dealerUp != null) {
             target = Target.DEALER
             dealerUp = null
         }
         update()
     }
 
+    /** Teilen ist möglich, solange die aktive Hand ein Paar aus zwei Karten ist. */
+    private fun canSplit(): Boolean =
+        hands.size < rules.maxHands && hand.cards.size == 2 && hand.isPair
+
     /**
-     * Leert den Tisch komplett - auch die Dealerkarte - und stellt die
-     * Eingabe wieder auf den Dealer. Jede neue Hand beginnt also gleich.
+     * Macht aus der aktiven Hand zwei. Die neue Hand kommt dahinter, wird
+     * also links davon angezeigt; gespielt wird weiter mit der ersten.
      */
+    private fun splitActiveHand() {
+        if (!canSplit()) return
+        val moved = hand.cards.removeAt(1)
+        val newHand = Hand()
+        newHand.add(moved)
+        newHand.fromSplit = true
+        hand.fromSplit = true
+        hands.add(activeHand + 1, newHand)
+        target = Target.HAND
+        update()
+    }
+
     private fun newRound() {
-        hand = Hand()
+        hands.clear()
+        hands.add(Hand())
+        activeHand = 0
         dealerUp = null
-        fromSplit = false
-        target = Target.DEALER
-        binding.swFromSplit.isChecked = false
+        target = Target.HAND
         update()
     }
 
@@ -190,38 +215,25 @@ class LiveActivity : AppCompatActivity() {
 
     private fun update() {
         binding.liveRules.text = rules.describe()
-        renderTarget()
-        renderTable()
+        renderDealer()
+        renderHands()
+        renderPrompt()
         renderCount()
         renderAdvice()
+        binding.btnSplit.isEnabled = canSplit()
+        binding.btnSplit.alpha = if (canSplit()) 1f else 0.45f
     }
 
-    /** Das Eingabeziel muss auf einen Blick erkennbar sein. */
-    private fun renderTarget() {
+    private fun renderDealer() {
         val dealerActive = target == Target.DEALER
         binding.dealerSlotBox.setBackgroundResource(
             if (dealerActive) R.drawable.hand_active else R.drawable.hand_idle
         )
-        binding.playerSlotBox.setBackgroundResource(
-            if (dealerActive) R.drawable.hand_idle else R.drawable.hand_active
+        binding.dealerSlotLabel.text = if (dealerActive) "DEALER ▸ EINGABE" else "DEALER"
+        binding.dealerSlotLabel.setTextColor(
+            ContextCompat.getColor(this, if (dealerActive) R.color.gold else R.color.text_muted)
         )
 
-        val gold = ContextCompat.getColor(this, R.color.gold)
-        val muted = ContextCompat.getColor(this, R.color.text_muted)
-        binding.dealerSlotLabel.text = if (dealerActive) "DEALER ▸ EINGABE" else "DEALER"
-        binding.dealerSlotLabel.setTextColor(if (dealerActive) gold else muted)
-        binding.playerSlotLabel.text = if (dealerActive) "DEINE HAND" else "DEINE HAND ▸ EINGABE"
-        binding.playerSlotLabel.setTextColor(if (dealerActive) muted else gold)
-
-        binding.keypadPrompt.text = when {
-            dealerActive -> "Karte des Dealers eintippen"
-            hand.cards.isEmpty() -> "Deine erste Karte eintippen"
-            hand.cards.size == 1 -> "Deine zweite Karte eintippen"
-            else -> "Gezogene Karte eintippen"
-        }
-    }
-
-    private fun renderTable() {
         binding.dealerSlot.removeAllViews()
         dealerUp?.let { card ->
             val view = PlayingCardView(this)
@@ -229,29 +241,78 @@ class LiveActivity : AppCompatActivity() {
             view.card = card
             binding.dealerSlot.addView(view)
         }
+    }
 
-        val container = binding.liveCards
-        container.removeAllViews()
-        for (card in hand.cards) {
-            val view = PlayingCardView(this)
-            view.cardWidthDp = 58f
-            view.card = card
-            val params = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+    private fun cardWidthDp(): Float = when (hands.size) {
+        1 -> 58f
+        2 -> 46f
+        else -> 38f
+    }
+
+    /** Hand 1 steht rechts, deshalb werden die Hände rückwärts eingehängt. */
+    private fun renderHands() {
+        val row = binding.playerHandsRow
+        row.removeAllViews()
+        val width = cardWidthDp()
+
+        for (index in hands.indices.reversed()) {
+            val handBinding = ViewLiveHandBinding.inflate(layoutInflater, row, false)
+            val current = hands[index]
+            val isActive = target == Target.HAND && index == activeHand
+
+            handBinding.root.setBackgroundResource(
+                if (isActive) R.drawable.hand_active else R.drawable.hand_idle
             )
-            params.marginStart = if (container.childCount == 0) 0 else dp(3)
-            container.addView(view, params)
-        }
+            val name = if (hands.size == 1) "DEINE HAND" else "HAND ${index + 1}"
+            handBinding.liveHandLabel.text = if (isActive) "$name ▸ EINGABE" else name
+            handBinding.liveHandLabel.setTextColor(
+                ContextCompat.getColor(this, if (isActive) R.color.gold else R.color.text_muted)
+            )
 
-        binding.liveTotal.text = when {
-            hand.cards.isEmpty() -> "—"
-            hand.isBusted -> "${hand.total} ✗"
-            else -> hand.displayTotal()
+            handBinding.liveHandTotal.text = when {
+                current.cards.isEmpty() -> "—"
+                current.isBusted -> "${current.total} ✗"
+                else -> current.displayTotal()
+            }
+            handBinding.liveHandTotal.setTextColor(
+                ContextCompat.getColor(
+                    this,
+                    if (current.isBusted) R.color.lose else R.color.text_primary
+                )
+            )
+
+            for (card in current.cards) {
+                val view = PlayingCardView(this)
+                view.cardWidthDp = width
+                view.card = card
+                val params = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                params.marginStart = if (handBinding.liveHandCards.childCount == 0) 0 else dp(3)
+                handBinding.liveHandCards.addView(view, params)
+            }
+
+            handBinding.root.setOnClickListener {
+                activeHand = index
+                target = Target.HAND
+                update()
+            }
+
+            val params = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            params.marginStart = if (row.childCount == 0) 0 else dp(8)
+            row.addView(handBinding.root, params)
         }
-        binding.liveTotal.setTextColor(
-            ContextCompat.getColor(this, if (hand.isBusted) R.color.lose else R.color.text_primary)
-        )
+    }
+
+    private fun renderPrompt() {
+        binding.keypadPrompt.text = when {
+            target == Target.DEALER -> "Karte des Dealers eintippen"
+            hands.size > 1 -> "Karte für Hand ${activeHand + 1} eintippen"
+            hand.cards.isEmpty() -> "Deine erste Karte eintippen"
+            hand.cards.size == 1 -> "Deine zweite Karte eintippen"
+            else -> "Gezogene Karte eintippen"
+        }
     }
 
     private val trueCount: Double get() = runningCount / (halfDecks / 2.0)
@@ -285,20 +346,27 @@ class LiveActivity : AppCompatActivity() {
         binding.adviceInsurance.visibility = View.GONE
 
         val up = dealerUp
-        if (up == null) {
-            setBanner("—", "Tippe die offene Karte des Dealers ein.", NEUTRAL)
+        val current = hand
+        val handName = if (hands.size == 1) "deine Karten" else "die Karten für Hand ${activeHand + 1}"
+
+        if (current.cards.size < 2 && up == null) {
+            setBanner("—", "Tippe $handName und die offene Karte des Dealers ein.", NEUTRAL)
             return
         }
-        if (hand.cards.size < 2) {
-            setBanner("—", "Tippe deine beiden Karten ein.", NEUTRAL)
+        if (up == null) {
+            setBanner("—", "Tippe noch die offene Karte des Dealers ein.", NEUTRAL)
+            return
+        }
+        if (current.cards.size < 2) {
+            setBanner("—", "Tippe $handName ein.", NEUTRAL)
             showInsuranceNote(up)
             return
         }
-        if (hand.isBusted) {
-            setBanner("ÜBERKAUFT", "Mit ${hand.total} ist die Hand verloren.", BUSTED)
+        if (current.isBusted) {
+            setBanner("ÜBERKAUFT", "Mit ${current.total} ist die Hand verloren.", BUSTED)
             return
         }
-        if (hand.cards.size == 2 && hand.total == 21 && !fromSplit) {
+        if (current.cards.size == 2 && current.total == 21 && !current.fromSplit) {
             val payout = if (rules.blackjackPays3to2) "3:2" else "6:5"
             setBanner(
                 "BLACKJACK",
@@ -311,16 +379,16 @@ class LiveActivity : AppCompatActivity() {
         val options = Options(
             canHit = true,
             canStand = true,
-            canDouble = hand.cards.size == 2 &&
-                (rules.doubleAnyTwo || hand.total in 9..11) &&
-                (!fromSplit || rules.doubleAfterSplit),
-            canSplit = hand.cards.size == 2 && hand.isPair,
-            canSurrender = rules.lateSurrender && hand.cards.size == 2 && !fromSplit
+            canDouble = current.cards.size == 2 &&
+                (rules.doubleAnyTwo || current.total in 9..11) &&
+                (!current.fromSplit || rules.doubleAfterSplit),
+            canSplit = canSplit(),
+            canSurrender = rules.lateSurrender && current.cards.size == 2 && !current.fromSplit
         )
 
-        var advice: Advice = BasicStrategy.advise(hand, up, rules, options)
+        var advice: Advice = BasicStrategy.advise(current, up, rules, options)
         if (countingActive) {
-            advice = CountStrategy.apply(advice, hand, up, trueCount, options)
+            advice = CountStrategy.apply(advice, current, up, trueCount, options)
         }
 
         val (label, color) = bannerFor(advice.action)

@@ -3,9 +3,12 @@ package com.blackjacktrainer
 import android.graphics.drawable.GradientDrawable
 import android.view.View
 import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.blackjacktrainer.databinding.ActivityLiveBinding
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -13,8 +16,9 @@ import org.robolectric.Robolectric
 import org.robolectric.annotation.Config
 
 /**
- * Der Live-Modus soll in drei Antippen zur Empfehlung führen: Dealerkarte,
- * eigene Karte, eigene Karte. Genau das prüfen diese Tests.
+ * Live-Modus: Eingegeben wird wie am Tisch ausgeteilt wird - deine erste
+ * Karte, die Karte des Dealers, deine zweite. Geteilte Hände stehen
+ * nebeneinander, Hand 1 rechts.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = "de-rDE-w411dp-h891dp-xxhdpi")
@@ -29,8 +33,7 @@ class LiveModeTest {
 
     /** Tippt eine Karte auf dem Tastenfeld an. */
     private fun tap(binding: ActivityLiveBinding, label: String) {
-        val rows = listOf(binding.keypadRow1, binding.keypadRow2)
-        for (row in rows) {
+        for (row in listOf(binding.keypadRow1, binding.keypadRow2)) {
             for (i in 0 until row.childCount) {
                 val button = row.getChildAt(i) as Button
                 if (button.text.toString() == label) {
@@ -42,135 +45,251 @@ class LiveModeTest {
         throw AssertionError("Keine Taste für $label gefunden")
     }
 
+    private fun tapAll(binding: ActivityLiveBinding, vararg labels: String) {
+        for (label in labels) tap(binding, label)
+    }
+
+    /** Hand 1 steht rechts, liegt im Layout also als letztes Kind. */
+    private fun handBox(binding: ActivityLiveBinding, index: Int): View {
+        val row = binding.playerHandsRow
+        return row.getChildAt(row.childCount - 1 - index)
+    }
+
+    private fun handCards(binding: ActivityLiveBinding, index: Int = 0) =
+        handBox(binding, index).findViewById<LinearLayout>(R.id.liveHandCards)
+
+    private fun handLabel(binding: ActivityLiveBinding, index: Int = 0) =
+        handBox(binding, index).findViewById<TextView>(R.id.liveHandLabel).text.toString()
+
+    private fun action(binding: ActivityLiveBinding) = binding.adviceAction.text.toString()
+
+    private fun bannerColor(binding: ActivityLiveBinding): Int =
+        (binding.advicePanel.background as GradientDrawable).color!!.defaultColor
+
+    // ------------------------------------------------------------ Grundlagen
+
     @Test
     fun tastenfeldHatAlleZehnWerte() {
         val (_, binding) = launch()
         assertEquals(5, binding.keypadRow1.childCount)
         assertEquals(5, binding.keypadRow2.childCount)
         for (label in listOf("2", "3", "4", "5", "6", "7", "8", "9", "10", "A")) {
-            tap(binding, label) // wirft, wenn eine Taste fehlt
+            tap(binding, label)
             binding.btnNewRound.performClick()
         }
     }
 
     @Test
-    fun ersteTasteIstDerDealerDannDieEigenenKarten() {
+    fun reihenfolgeIstDeineKarteDannDealerDannDeineKarte() {
         val (_, binding) = launch()
-        assertTrue(binding.keypadPrompt.text.toString().contains("Dealer"))
-
-        tap(binding, "6")
-        assertEquals(1, binding.dealerSlot.childCount)
-        assertEquals(0, binding.liveCards.childCount)
+        // Es beginnt bei dir, nicht beim Dealer
+        assertTrue(handLabel(binding).contains("EINGABE"))
         assertEquals("Deine erste Karte eintippen", binding.keypadPrompt.text.toString())
 
         tap(binding, "8")
-        assertEquals(1, binding.liveCards.childCount)
+        assertEquals(1, handCards(binding).childCount)
+        assertEquals(0, binding.dealerSlot.childCount)
+        // Jetzt ist der Dealer dran
+        assertTrue(binding.dealerSlotLabel.text.toString().contains("EINGABE"))
+        assertEquals("Karte des Dealers eintippen", binding.keypadPrompt.text.toString())
+
+        tap(binding, "6")
+        assertEquals(1, binding.dealerSlot.childCount)
+        // und danach wieder du
+        assertTrue(handLabel(binding).contains("EINGABE"))
         assertEquals("Deine zweite Karte eintippen", binding.keypadPrompt.text.toString())
 
         tap(binding, "8")
-        assertEquals(2, binding.liveCards.childCount)
-        // 8-8 gegen 6 wird geteilt
-        assertEquals("TEILEN", binding.adviceAction.text.toString())
-        assertTrue(binding.adviceReason.text.isNotEmpty())
+        assertEquals(2, handCards(binding).childCount)
+        assertEquals("TEILEN", action(binding))
     }
 
     @Test
     fun sechzehnGegenZehnWirdAufgegeben() {
         val (_, binding) = launch()
-        tap(binding, "10")
-        tap(binding, "10")
-        tap(binding, "6")
-        assertEquals("AUFGEBEN", binding.adviceAction.text.toString())
+        tapAll(binding, "10", "10", "6") // du 10, Dealer 10, du 6
+        assertEquals("AUFGEBEN", action(binding))
     }
 
     @Test
     fun softAchtzehnGegenNeunWirdGezogen() {
         val (_, binding) = launch()
-        tap(binding, "9")
-        tap(binding, "A")
-        tap(binding, "7")
-        assertEquals("KARTE NEHMEN", binding.adviceAction.text.toString())
+        tapAll(binding, "A", "9", "7")
+        assertEquals("KARTE NEHMEN", action(binding))
     }
 
     @Test
-    fun elfWirdVerdoppeltAberNachDemDrittenBlattNichtMehr() {
+    fun elfWirdVerdoppeltAberNachDerDrittenKarteNichtMehr() {
         val (_, binding) = launch()
-        tap(binding, "6")
-        tap(binding, "5")
-        tap(binding, "6")
-        assertEquals("VERDOPPELN", binding.adviceAction.text.toString())
+        tapAll(binding, "5", "6", "6") // du 5, Dealer 6, du 6 -> 11
+        assertEquals("VERDOPPELN", action(binding))
 
-        // Dritte Karte: verdoppeln ist vorbei, aus 13 gegen 6 wird Stehen
-        tap(binding, "2")
-        assertEquals("STEHEN BLEIBEN", binding.adviceAction.text.toString())
+        tap(binding, "2") // 13 gegen 6
+        assertEquals("STEHEN BLEIBEN", action(binding))
     }
 
     @Test
     fun ueberkaufteHandWirdAlsSolcheGemeldet() {
         val (_, binding) = launch()
-        tap(binding, "7")
-        tap(binding, "10")
-        tap(binding, "9")
-        tap(binding, "5")
-        assertEquals("ÜBERKAUFT", binding.adviceAction.text.toString())
+        tapAll(binding, "10", "7", "9", "5") // 10 + 9 + 5 = 24
+        assertEquals("ÜBERKAUFT", action(binding))
     }
 
     @Test
     fun blackjackWirdErkannt() {
         val (_, binding) = launch()
-        tap(binding, "7")
-        tap(binding, "A")
-        tap(binding, "10")
-        assertEquals("BLACKJACK", binding.adviceAction.text.toString())
+        tapAll(binding, "A", "7", "10")
+        assertEquals("BLACKJACK", action(binding))
     }
 
     @Test
     fun beimAssKommtDerVersicherungshinweis() {
         val (_, binding) = launch()
-        tap(binding, "A")
+        tapAll(binding, "5", "A")
         assertEquals(View.VISIBLE, binding.adviceInsurance.visibility)
         assertTrue(binding.adviceInsurance.text.toString().startsWith("Versicherung: nein"))
 
         binding.btnNewRound.performClick()
-        tap(binding, "6")
+        tapAll(binding, "5", "6")
         assertEquals(View.GONE, binding.adviceInsurance.visibility)
     }
 
-    @Test
-    fun zurueckNimmtImmerDieLetzteEingabeZurueck() {
-        val (_, binding) = launch()
-        tap(binding, "6")
-        tap(binding, "8")
-        tap(binding, "8")
+    // ---------------------------------------------------------------- Teilen
 
-        binding.btnUndoCard.performClick()
-        assertEquals(1, binding.liveCards.childCount)
-        binding.btnUndoCard.performClick()
-        assertEquals(0, binding.liveCards.childCount)
-        // Jetzt ist die Dealerkarte dran
-        binding.btnUndoCard.performClick()
-        assertEquals(0, binding.dealerSlot.childCount)
-        assertTrue(binding.keypadPrompt.text.toString().contains("Dealer"))
+    @Test
+    fun teilenErzeugtZweiHaendeMitHandEinsRechts() {
+        val (_, binding) = launch()
+        tapAll(binding, "8", "6", "8")
+        assertEquals("TEILEN", action(binding))
+        assertTrue(binding.btnSplit.isEnabled)
+
+        binding.btnSplit.performClick()
+        assertEquals(2, binding.playerHandsRow.childCount)
+        // Beide Hände haben je eine Karte
+        assertEquals(1, handCards(binding, 0).childCount)
+        assertEquals(1, handCards(binding, 1).childCount)
+        // Hand 1 liegt rechts, also als letztes Kind der Reihe
+        val row = binding.playerHandsRow
+        val rightmost = row.getChildAt(row.childCount - 1)
+        assertEquals(
+            "HAND 1 ▸ EINGABE",
+            rightmost.findViewById<TextView>(R.id.liveHandLabel).text.toString()
+        )
+        val leftmost = row.getChildAt(0)
+        assertEquals(
+            "HAND 2",
+            leftmost.findViewById<TextView>(R.id.liveHandLabel).text.toString()
+        )
+        // Weitergespielt wird mit Hand 1
+        assertEquals("Karte für Hand 1 eintippen", binding.keypadPrompt.text.toString())
     }
 
     @Test
-    fun neueRundeLeertAuchDenDealerUndBeginntWiederDort() {
+    fun splitKnopfIstNurBeiEinemPaarAktiv() {
         val (_, binding) = launch()
-        tap(binding, "6")
-        tap(binding, "8")
-        tap(binding, "8")
+        assertFalse(binding.btnSplit.isEnabled)
+
+        tapAll(binding, "8", "6", "9") // kein Paar
+        assertFalse(binding.btnSplit.isEnabled)
 
         binding.btnNewRound.performClick()
-        assertEquals(0, binding.dealerSlot.childCount)
-        assertEquals(0, binding.liveCards.childCount)
-        // Die Eingabe steht wieder beim Dealer
-        assertTrue(binding.dealerSlotLabel.text.toString().contains("EINGABE"))
-        assertTrue(binding.keypadPrompt.text.toString().contains("Dealer"))
+        tapAll(binding, "8", "6", "8")
+        assertTrue(binding.btnSplit.isEnabled)
+    }
 
-        // und der erste Druck landet folgerichtig dort
-        tap(binding, "9")
+    @Test
+    fun nachDemTeilenGiltDieRegelFuerGeteilteHaende() {
+        val (_, binding) = launch()
+        tapAll(binding, "8", "10", "8")
+        // Ungeteilt wäre die 16 gegen eine Zehn ein Fall zum Aufgeben
+        assertEquals("TEILEN", action(binding))
+        binding.btnSplit.performClick()
+
+        // Hand 1: 8 + 7 = 15 gegen 10. Aufgeben ist nach einem Split nicht
+        // mehr erlaubt, also wird gezogen.
+        tap(binding, "7")
+        assertEquals("KARTE NEHMEN", action(binding))
+    }
+
+    @Test
+    fun zwischenGeteiltenHaendenLaesstSichWechseln() {
+        val (_, binding) = launch()
+        tapAll(binding, "8", "6", "8")
+        binding.btnSplit.performClick()
+
+        // Auf Hand 2 wechseln (links) und ihr eine Karte geben
+        handBox(binding, 1).performClick()
+        assertEquals("Karte für Hand 2 eintippen", binding.keypadPrompt.text.toString())
+        tap(binding, "3")
+        assertEquals(2, handCards(binding, 1).childCount)
+        assertEquals(1, handCards(binding, 0).childCount)
+    }
+
+    @Test
+    fun mehrfachesTeilenErzeugtWeitereHaende() {
+        val (_, binding) = launch()
+        tapAll(binding, "8", "6", "8")
+        binding.btnSplit.performClick()
+        // Hand 1 bekommt wieder eine 8 - erneut teilbar
+        tap(binding, "8")
+        assertTrue(binding.btnSplit.isEnabled)
+        binding.btnSplit.performClick()
+        assertEquals(3, binding.playerHandsRow.childCount)
+    }
+
+    // ----------------------------------------------------------- Bedienung
+
+    @Test
+    fun zurueckNimmtDieLetzteEingabeZurueck() {
+        val (_, binding) = launch()
+        tapAll(binding, "8", "6", "8")
+
+        binding.btnUndoCard.performClick()
+        assertEquals(1, handCards(binding).childCount)
+        binding.btnUndoCard.performClick()
+        assertEquals(0, handCards(binding).childCount)
+        // Jetzt ist die Dealerkarte an der Reihe
+        binding.btnUndoCard.performClick()
+        assertEquals(0, binding.dealerSlot.childCount)
+    }
+
+    @Test
+    fun zurueckWirktAufDasAusgewaehlteFeld() {
+        val (_, binding) = launch()
+        tapAll(binding, "8", "6", "8")
+
+        binding.dealerSlotBox.performClick()
+        binding.btnUndoCard.performClick()
+        assertEquals(0, binding.dealerSlot.childCount)
+        assertEquals(2, handCards(binding).childCount)
+    }
+
+    @Test
+    fun zielLaesstSichDurchAntippenWechseln() {
+        val (_, binding) = launch()
+        tapAll(binding, "8", "6")
         assertEquals(1, binding.dealerSlot.childCount)
-        assertEquals(0, binding.liveCards.childCount)
+
+        // Dealerkarte korrigieren, ohne die eigene Karte zu verlieren
+        binding.dealerSlotBox.performClick()
+        tap(binding, "10")
+        assertEquals(1, binding.dealerSlot.childCount)
+        assertEquals(1, handCards(binding).childCount)
+        assertTrue(handLabel(binding).contains("EINGABE"))
+    }
+
+    @Test
+    fun neueRundeLeertAllesUndBeginntWiederBeiDir() {
+        val (_, binding) = launch()
+        tapAll(binding, "8", "6", "8")
+        binding.btnSplit.performClick()
+
+        binding.btnNewRound.performClick()
+        assertEquals(1, binding.playerHandsRow.childCount)
+        assertEquals(0, binding.dealerSlot.childCount)
+        assertEquals(0, handCards(binding).childCount)
+        assertTrue(handLabel(binding).contains("EINGABE"))
+        assertEquals("Deine erste Karte eintippen", binding.keypadPrompt.text.toString())
     }
 
     @Test
@@ -184,83 +303,31 @@ class LiveModeTest {
         // hohem True Count heißt stehen statt aufgeben.
         if (binding.countPanel.visibility != View.VISIBLE) binding.btnToggleCount.performClick()
         repeat(12) { binding.btnCountUp.performClick() }
-        tap(binding, "10")
-        tap(binding, "10")
-        tap(binding, "6")
-        assertEquals("STEHEN BLEIBEN", binding.adviceAction.text.toString())
+        tapAll(binding, "10", "10", "6")
+        assertEquals("STEHEN BLEIBEN", action(binding))
         assertEquals(View.VISIBLE, binding.adviceCountNote.visibility)
     }
-
-    @Test
-    fun eingabezielIstBeschriftetUndWechseltNachDerDealerkarte() {
-        val (_, binding) = launch()
-        assertTrue(binding.dealerSlotLabel.text.toString().contains("EINGABE"))
-        assertTrue(!binding.playerSlotLabel.text.toString().contains("EINGABE"))
-
-        tap(binding, "6")
-        // Die Dealerkarte gibt es nur einmal, danach ist die Hand dran
-        assertTrue(!binding.dealerSlotLabel.text.toString().contains("EINGABE"))
-        assertTrue(binding.playerSlotLabel.text.toString().contains("EINGABE"))
-    }
-
-    @Test
-    fun zielLaesstSichDurchAntippenWechseln() {
-        val (_, binding) = launch()
-        tap(binding, "6")
-        tap(binding, "8")
-        assertEquals(1, binding.liveCards.childCount)
-
-        // Zurück zum Dealer wechseln und die Karte korrigieren
-        binding.dealerSlotBox.performClick()
-        assertTrue(binding.dealerSlotLabel.text.toString().contains("EINGABE"))
-        tap(binding, "10")
-        assertEquals(1, binding.dealerSlot.childCount)
-        // Die eigene Karte bleibt unangetastet
-        assertEquals(1, binding.liveCards.childCount)
-        // und danach ist wieder die Hand dran
-        assertTrue(binding.playerSlotLabel.text.toString().contains("EINGABE"))
-    }
-
-    @Test
-    fun zurueckWirktAufDasAusgewaehlteFeld() {
-        val (_, binding) = launch()
-        tap(binding, "6")
-        tap(binding, "8")
-
-        binding.dealerSlotBox.performClick()
-        binding.btnUndoCard.performClick()
-        assertEquals(0, binding.dealerSlot.childCount)
-        assertEquals(1, binding.liveCards.childCount)
-    }
-
-    private fun bannerColor(binding: ActivityLiveBinding): Int =
-        (binding.advicePanel.background as GradientDrawable).color!!.defaultColor
 
     @Test
     fun jedeEntscheidungHatIhreEigeneFarbe() {
         val (_, binding) = launch()
 
-        // 20 gegen 6: stehen
-        tap(binding, "6"); tap(binding, "10"); tap(binding, "10")
-        assertEquals("STEHEN BLEIBEN", binding.adviceAction.text.toString())
+        tapAll(binding, "10", "6", "10") // 20 gegen 6: stehen
+        assertEquals("STEHEN BLEIBEN", action(binding))
         val stand = bannerColor(binding)
 
-        // 16 gegen 10: aufgeben
         binding.btnNewRound.performClick()
-        tap(binding, "10"); tap(binding, "10"); tap(binding, "6")
+        tapAll(binding, "10", "10", "6") // 16 gegen 10: aufgeben
         val surrender = bannerColor(binding)
 
-        // 11 gegen 6: verdoppeln
         binding.btnNewRound.performClick()
-        tap(binding, "6"); tap(binding, "5"); tap(binding, "6")
+        tapAll(binding, "5", "6", "6") // 11 gegen 6: verdoppeln
         val double = bannerColor(binding)
 
-        // 12 gegen 10: ziehen
         binding.btnNewRound.performClick()
-        tap(binding, "10"); tap(binding, "8"); tap(binding, "4")
+        tapAll(binding, "8", "10", "4") // 12 gegen 10: ziehen
         val hit = bannerColor(binding)
 
-        val colors = listOf(stand, surrender, double, hit)
-        assertEquals("Farben müssen sich unterscheiden", 4, colors.toSet().size)
+        assertEquals("Farben müssen sich unterscheiden", 4, listOf(stand, surrender, double, hit).toSet().size)
     }
 }

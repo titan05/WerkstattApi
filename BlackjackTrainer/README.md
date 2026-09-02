@@ -39,20 +39,26 @@ verdeckt ist, glüht auch nichts.
 gewesen wäre. Eine Trefferquote in der Fußzeile zeigt, wie sauber du spielst.
 
 **Live-Modus** (Knopf „LIVE" oben). Für den echten Tisch: Ein großes
-Tastenfeld, das immer an derselben Stelle liegt. Der erste Druck ist die
-offene Karte des Dealers, die nächsten sind deine eigenen — die App weiß
-selbst, was gerade dran ist, und sagt es in der Zeile über dem Tastenfeld.
+Tastenfeld, das immer an derselben Stelle liegt. Eingetippt wird in der
+Reihenfolge, in der am Tisch ausgeteilt wird — deine erste Karte, die offene
+Karte des Dealers, deine zweite. Die App springt selbst zwischen den Feldern
+und sagt in der Zeile über dem Tastenfeld, was ein Druck gerade bedeutet.
 Drei Antippen bis zur Empfehlung, danach reicht pro gezogener Karte ein
 weiterer Druck. „Zurück" nimmt die letzte Eingabe zurück, „Neue Runde" leert
-den Tisch komplett — auch die Dealerkarte — und stellt die Eingabe wieder auf
-den Dealer. Bube, Dame und König werden als 10 eingegeben.
+alles und beginnt wieder bei dir. Bube, Dame und König werden als 10
+eingegeben.
 
-Welches Feld die Eingabe bekommt, ist immer sichtbar: Dealer und eigene Hand
-sind zwei Felder untereinander, wie am Tisch — Dealer oben, deine Hand
-darunter. Das aktive hat einen goldenen Rahmen und die Beschriftung
-„▸ EINGABE". Antippen wechselt das Ziel — praktisch, um eine falsch
-eingetippte Dealerkarte zu korrigieren, ohne die Hand neu einzugeben.
+Welches Feld die Eingabe bekommt, ist immer sichtbar: Dealer oben, deine Hand
+darunter, wie am Tisch. Das aktive Feld hat einen goldenen Rahmen und die
+Beschriftung „▸ EINGABE". Antippen wechselt das Ziel — praktisch, um eine
+falsch eingetippte Dealerkarte zu korrigieren, ohne die Hand neu einzugeben.
 „Zurück" wirkt auf das ausgewählte Feld.
+
+**Teilen** macht aus einer Hand zwei. Die Hände stehen dann nebeneinander,
+Hand 1 rechts — so wie sie am Tisch gespielt werden. Weitergespielt wird mit
+Hand 1; ein Tipp auf die andere Hand wechselt dorthin. Für geteilte Hände
+gelten automatisch die passenden Regeln (kein Aufgeben mehr, Verdoppeln nur
+mit DAS), und erneutes Teilen ist bis zur vierten Hand möglich.
 
 Die Entscheidung erscheint als farbige Tafel in Klartext („KARTE NEHMEN",
 „STEHEN BLEIBEN", „VERDOPPELN", „TEILEN", „AUFGEBEN"), in denselben Farben

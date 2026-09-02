@@ -153,14 +153,21 @@ class ScreenshotTest {
         val binding = field.get(activity) as ActivityLiveBinding
         binding.root.background = activity.getDrawable(R.drawable.bg_felt)
 
-        // 16 gegen eine Zehn eingeben
+        // 16 gegen eine Zehn: du 10, Dealer 10, du 6
         for (label in listOf("10", "10", "6")) tapLive(binding, label)
         capture(binding.root, "09_live")
 
         // Zweite Entscheidung in anderer Farbe: 20 gegen 6 heißt stehen
         binding.btnNewRound.performClick()
-        for (label in listOf("6", "10", "10")) tapLive(binding, label)
+        for (label in listOf("10", "6", "10")) tapLive(binding, label)
         capture(binding.root, "10_live_stehen")
+
+        // Geteilte Hände: Hand 1 rechts, Hand 2 links
+        binding.btnNewRound.performClick()
+        for (label in listOf("8", "6", "8")) tapLive(binding, label)
+        binding.btnSplit.performClick()
+        tapLive(binding, "3")
+        capture(binding.root, "11_live_split")
     }
 
     private fun tapLive(binding: ActivityLiveBinding, label: String) {
