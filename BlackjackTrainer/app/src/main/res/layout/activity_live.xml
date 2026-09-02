@@ -170,39 +170,39 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnUndoCard"
             android:layout_width="0dp"
-            android:layout_height="74dp"
+            android:layout_height="54dp"
             android:layout_weight="1"
             android:background="@drawable/btn_outline"
             android:text="Zurück"
             android:textAllCaps="false"
             android:textColor="@color/text_primary"
-            android:textSize="19sp"
+            android:textSize="15sp"
             android:stateListAnimator="@null" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnSplit"
             android:layout_width="0dp"
-            android:layout_height="74dp"
+            android:layout_height="54dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:background="@drawable/btn_outline"
             android:text="Teilen"
             android:textAllCaps="false"
             android:textColor="@color/text_primary"
-            android:textSize="19sp"
+            android:textSize="15sp"
             android:stateListAnimator="@null" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnNewRound"
             android:layout_width="0dp"
-            android:layout_height="74dp"
+            android:layout_height="54dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:background="@drawable/btn_gold"
             android:text="Neue Runde"
             android:textAllCaps="false"
             android:textColor="#0C2A18"
-            android:textSize="19sp"
+            android:textSize="15sp"
             android:textStyle="bold"
             android:stateListAnimator="@null" />
     </LinearLayout>

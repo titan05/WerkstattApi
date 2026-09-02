@@ -155,7 +155,7 @@ class LiveActivity : AppCompatActivity() {
             val row = rows[index / 5]
             val button = AppCompatButton(this)
             button.text = rank.label
-            button.textSize = 21f
+            button.textSize = 28f
             button.isAllCaps = false
             button.setPadding(0, 0, 0, 0)
             button.minWidth = 0
@@ -163,7 +163,7 @@ class LiveActivity : AppCompatActivity() {
             button.stateListAnimator = null
             button.setBackgroundResource(R.drawable.btn_light)
             button.setTextColor(ContextCompat.getColor(this, R.color.btn_action_text))
-            val params = LinearLayout.LayoutParams(0, dp(62), 1f)
+            val params = LinearLayout.LayoutParams(0, dp(84), 1f)
             params.marginStart = if (row.childCount == 0) 0 else dp(6)
             button.layoutParams = params
             button.setOnClickListener { onKey(rank) }
