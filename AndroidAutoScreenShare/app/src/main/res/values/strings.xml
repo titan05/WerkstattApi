@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Car Screen Mirror</string>
+
+    <string name="action_start">Bildschirmfreigabe starten</string>
+    <string name="action_stop">Freigabe beenden</string>
+
+    <string name="setting_parked_only">Nur im Stand spiegeln</string>
+    <string name="setting_parked_only_detail">Sobald sich das Fahrzeug bewegt, wird die Anzeige im Auto pausiert. Ohne Geschwindigkeitsdaten bleibt die Sperre wirkungslos.</string>
+
+    <string name="status_idle">Nicht aktiv</string>
+    <string name="status_idle_detail">Starte die Bildschirmfreigabe und öffne die App danach in Android Auto (Kategorie: Navigation).</string>
+    <string name="status_waiting_car">Warten auf Android Auto</string>
+    <string name="status_waiting_car_detail">Die Freigabe läuft. Öffne „Car Screen Mirror“ auf dem Autodisplay.</string>
+    <string name="status_waiting_phone">Auto verbunden</string>
+    <string name="status_waiting_phone_detail">Das Autodisplay ist bereit. Starte jetzt die Bildschirmfreigabe.</string>
+    <string name="status_mirroring">Spiegelung aktiv</string>
+    <string name="status_mirroring_detail">Der Handybildschirm wird auf das Autodisplay übertragen. Berührungen am Autodisplay werden nicht zum Handy zurückgeleitet.</string>
+    <string name="status_paused">Pausiert – Fahrt erkannt</string>
+    <string name="status_paused_detail">Die Übertragung wird fortgesetzt, sobald das Fahrzeug steht.</string>
+
+    <string name="toast_consent_denied">Ohne Freigabe kann der Bildschirm nicht übertragen werden.</string>
+    <string name="toast_no_projection">Dieses Gerät stellt keine Bildschirmaufnahme bereit.</string>
+
+    <string name="notification_channel">Bildschirmübertragung</string>
+    <string name="notification_title">Bildschirm wird geteilt</string>
+    <string name="notification_text">Der Handybildschirm steht für Android Auto bereit.</string>
+
+    <string name="car_idle_title">Bildschirmfreigabe am Handy starten</string>
+    <string name="car_idle_subtitle">App am Handy öffnen und „Bildschirmfreigabe starten“ antippen</string>
+    <string name="car_connecting_title">Verbindung wird aufgebaut …</string>
+    <string name="car_connecting_subtitle">Einen Moment bitte</string>
+    <string name="car_paused_title">Pausiert – Fahrzeug in Bewegung</string>
+    <string name="car_paused_subtitle">Die Anzeige kehrt im Stand automatisch zurück</string>
+
+    <string name="car_status_mirroring">Spiegelung aktiv</string>
+    <string name="car_status_paused">Pausiert</string>
+    <string name="car_status_waiting">Warten</string>
+    <string name="car_toast_hint">Gesteuert wird am Handy – das Autodisplay zeigt nur an.</string>
+
+    <string name="hints">Hinweise:\n• Die App muss per Sideload installiert und in den Entwicklereinstellungen von Android Auto unter „Unbekannte Quellen“ erlaubt werden.\n• Android Auto zeigt sie in der Kategorie „Navigation“ an.\n• Eingaben am Autodisplay werden nicht an das Handy weitergegeben.\n• Ablenkung am Steuer ist gefährlich und je nach Land verboten – nutze die Spiegelung nur im Stand oder für Beifahrer.</string>
+</resources>
