@@ -72,19 +72,44 @@ Hier reicht der Sideload:
 ### Weg 2: Internal App Sharing (echtes Auto)
 
 Der von Google dokumentierte Weg, eine Template-App ohne Review auf ein echtes Head-Unit zu
-bekommen:
+bekommen. Wichtig: **ein eigener Signaturschlüssel ist nicht nötig** – Internal App Sharing
+akzeptiert ausdrücklich debug-signierte APKs und signiert sie selbst neu.
 
-1. Play-Entwicklerkonto anlegen (einmalig ca. 25 USD).
-2. In der Play Console unter **Internal App Sharing** das APK hochladen – kein Review,
-   keine Veröffentlichung.
-3. Den erzeugten Link am Handy öffnen und die App darüber installieren. Play gilt damit als
-   Installationsquelle, und Android Auto zeigt die App unter den **Navigations-Apps**.
-4. Android Auto beenden (`adb shell am force-stop com.google.android.projection.gearhead`)
-   und neu mit dem Auto verbinden.
+**Einmalig: Konto**
+
+Play-Entwicklerkonto anlegen (einmalig ca. 25 USD). Neue Konten müssen eine
+Identitätsprüfung durchlaufen, das kann einige Tage dauern.
+
+**Am Rechner: APK hochladen**
+
+1. `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`
+2. Play Console öffnen → linkes Menü **Testen und freigeben → Interne App-Freigabe**
+   (direkt: `play.google.com/console/internal-app-sharing`).
+3. **Hochladen** wählen, das APK auswählen, einen Versionsnamen vergeben.
+4. Neben dem Upload auf das Kopiersymbol klicken – das ist der Installationslink.
+
+**Am Handy: Interne App-Freigabe einschalten**
+
+1. Play Store öffnen → Profilbild → **Einstellungen** → Abschnitt **Info**.
+2. **7× auf „Play Store-Version“** tippen, bis der Schalter erscheint.
+3. Schalter **„Interne App-Freigabe“** einschalten → *Aktivieren*.
+
+**Installieren und prüfen**
+
+1. Den kopierten Link am Handy öffnen → über den Play Store installieren.
+   Damit gilt Play als Installationsquelle, und die App wird für Android Auto sichtbar.
+2. Android Auto neu einlesen lassen:
+   `adb shell am force-stop com.google.android.projection.gearhead`, danach das Handy neu
+   mit dem Auto verbinden.
+3. Die App erscheint im Autolauncher unter den **Navigations-Apps** als „Car Screen Mirror“.
+
+Grenzen: Der Link läuft nach **60 Tagen** ab und erlaubt maximal **100 Downloads**; danach
+einfach neu hochladen. Uploads hier landen nie automatisch in einem Testtrack oder in der
+Produktion.
 
 Falls Android Auto die App auch danach nicht anzeigt, ist der nächste Schritt ein
 **Internal Test Track** – dafür muss die App in der Play Console für die Formfaktor-Kategorie
-Android Auto deklariert werden.
+Android Auto deklariert werden, und der Upload durchläuft ein Review.
 
 ## Benutzung
 
