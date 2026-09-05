@@ -20,8 +20,10 @@ Daraus folgen ein paar harte Grenzen, die kein Code umgehen kann:
 
 | Punkt | Status |
 | --- | --- |
-| Veröffentlichung im Play Store | **Nicht möglich.** Verstößt gegen die Android-Auto-Richtlinien. Nur Sideload für den Eigenbedarf. |
-| Installation | Nur per `adb install` / APK, plus „Unbekannte Quellen“ in den Android-Auto-Entwicklereinstellungen. |
+| Veröffentlichung im Play Store | **Nicht möglich.** Verstößt gegen die Android-Auto-Richtlinien. |
+| Sideload per `adb install` | **Reicht nicht.** Der Entwicklerschalter „Unbekannte Quellen“ gilt laut Google ausdrücklich nur für Media-, Messaging- und Parked-Apps, **nicht** für Apps der Car App Library. Eine sideloadete Template-App erscheint im Auto gar nicht erst im Menü. |
+| Installation im echten Auto | Nur aus einer vertrauenswürdigen Quelle, d. h. über Google Play – für den Eigenbedarf reicht **Internal App Sharing** (kein Review nötig, Play-Entwicklerkonto einmalig ca. 25 USD). |
+| Entwicklung ohne Auto | Funktioniert per `adb install` + **Desktop Head Unit** am Rechner. |
 | Bedienung am Autodisplay | **Nur Anzeige.** Berührungen am Autodisplay werden nicht ans Handy zurückgeleitet – dafür bräuchte es Root oder eine Systemberechtigung. Bedient wird am Handy. |
 | Langlebigkeit | Google kann diesen Weg mit einem Android-Auto-Update jederzeit schließen. Genau das ist bereits mehrfach mit vergleichbaren Apps passiert. |
 | Recht & Sicherheit | Videoinhalte im Sichtfeld des Fahrers sind in vielen Ländern (auch in Österreich und Deutschland) verboten. Die App ist für Standbetrieb bzw. Beifahrer gedacht und pausiert die Anzeige standardmäßig, sobald sich das Fahrzeug bewegt. |
@@ -51,27 +53,38 @@ gegen die Allowlist der Car App Library.
 
 ## Installieren
 
-```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
+> **Wichtig:** Ein einfaches `adb install` genügt für den Betrieb im echten Auto **nicht**.
+> Android Auto blendet Apps der Car App Library aus, wenn sie nicht aus einer
+> vertrauenswürdigen Quelle stammen. Der Entwicklerschalter „Unbekannte Quellen“ ändert
+> daran nichts – er gilt laut
+> [Google-Dokumentation](https://developer.android.com/training/cars/testing#unknown-sources)
+> nur für Media-, Messaging- und Parked-Apps.
 
-Danach muss Android Auto Apps aus unbekannten Quellen erlauben:
+### Weg 1: Desktop Head Unit (Entwicklung, ohne Auto)
 
-1. Am Handy die **Android-Auto-Einstellungen** öffnen
-   (Systemeinstellungen → *Verbundene Geräte* → *Verbindungseinstellungen* → *Android Auto*).
-2. Ganz nach unten scrollen und **10× auf „Version“** tippen, bis die Entwicklereinstellungen
-   freigeschaltet werden.
-3. Oben rechts über das Dreipunkt-Menü die **Entwicklereinstellungen** öffnen und
-   **„Unbekannte Quellen“** aktivieren.
-4. Android Auto beenden und das Handy neu mit dem Auto verbinden.
-
-Die App erscheint im Autolauncher unter den **Navigations-Apps** als „Car Screen Mirror“.
-
-### Testen ohne Auto (Desktop Head Unit)
+Hier reicht der Sideload:
 
 1. Im SDK-Manager „Android Auto Desktop Head Unit emulator“ installieren.
-2. In den Android-Auto-Entwicklereinstellungen **„Head-Unit-Server starten“** aktivieren.
-3. `adb forward tcp:5277 tcp:5277` und danach `./desktop-head-unit` aus dem SDK starten.
+2. `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+3. In den Android-Auto-Entwicklereinstellungen **„Head-Unit-Server starten“** aktivieren.
+4. `adb forward tcp:5277 tcp:5277`, danach `./desktop-head-unit` aus dem SDK starten.
+
+### Weg 2: Internal App Sharing (echtes Auto)
+
+Der von Google dokumentierte Weg, eine Template-App ohne Review auf ein echtes Head-Unit zu
+bekommen:
+
+1. Play-Entwicklerkonto anlegen (einmalig ca. 25 USD).
+2. In der Play Console unter **Internal App Sharing** das APK hochladen – kein Review,
+   keine Veröffentlichung.
+3. Den erzeugten Link am Handy öffnen und die App darüber installieren. Play gilt damit als
+   Installationsquelle, und Android Auto zeigt die App unter den **Navigations-Apps**.
+4. Android Auto beenden (`adb shell am force-stop com.google.android.projection.gearhead`)
+   und neu mit dem Auto verbinden.
+
+Falls Android Auto die App auch danach nicht anzeigt, ist der nächste Schritt ein
+**Internal Test Track** – dafür muss die App in der Play Console für die Formfaktor-Kategorie
+Android Auto deklariert werden.
 
 ## Benutzung
 
@@ -123,7 +136,7 @@ Wichtige Reihenfolge (ab Android 14 zwingend): erst Foreground-Service mit Typ
 
 | Symptom | Ursache / Lösung |
 | --- | --- |
-| App taucht im Auto nicht auf | „Unbekannte Quellen“ nicht aktiviert, oder Android Auto wurde nicht neu verbunden. Die App liegt unter *Navigation*, nicht unter *Medien*. |
+| App taucht im Auto nicht auf | Häufigster Fall: per `adb install` sideloadet. Das genügt für Template-Apps nicht, siehe *Installieren*. Andernfalls prüfen, ob Android Auto seit der Installation neu gestartet wurde – die App liegt unter *Navigation*, nicht unter *Medien*. |
 | Schwarzes Bild mit Hinweistext | Freigabe am Handy noch nicht gestartet. |
 | Dauerhaft „Pausiert“ | Das Fahrzeug meldet Bewegung. Zum Testen den Schalter „Nur im Stand spiegeln“ ausschalten. |
 | Spiegelung stoppt beim Verlassen der App im Auto | Der Host gibt die Surface frei, sobald eine andere App im Vordergrund ist – das ist so vorgesehen. Die Freigabe am Handy bleibt aktiv, das Bild kehrt beim Zurückwechseln zurück. |
