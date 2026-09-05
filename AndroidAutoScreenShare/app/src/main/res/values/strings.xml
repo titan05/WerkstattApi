@@ -6,7 +6,10 @@
     <string name="action_stop">Freigabe beenden</string>
 
     <string name="setting_parked_only">Nur im Stand spiegeln</string>
-    <string name="setting_parked_only_detail">Sobald sich das Fahrzeug bewegt, wird die Anzeige im Auto pausiert. Ohne Geschwindigkeitsdaten bleibt die Sperre wirkungslos.</string>
+    <string name="setting_parked_only_detail">Sobald sich das Fahrzeug bewegt, wird die Anzeige im Auto pausiert.</string>
+    <!-- Bewusst als eigener, sichtbar hervorgehobener Hinweis: der SpeedGuard ist
+         fail-open, das darf nicht in einer Bildunterschrift untergehen. -->
+    <string name="setting_parked_only_caveat">Liefert das Fahrzeug keine Geschwindigkeit, greift die Sperre nicht — dann wird auch während der Fahrt gespiegelt.</string>
 
     <string name="status_idle">Nicht aktiv</string>
     <string name="status_idle_detail">Starte die Bildschirmfreigabe und öffne die App danach in Android Auto (Kategorie: Navigation).</string>
