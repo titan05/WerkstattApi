@@ -27,8 +27,16 @@ android {
             isMinifyEnabled = false
         }
         release {
-            isMinifyEnabled = false
+            // Pflicht wegen material-icons-extended: ohne R8 landen alle Icons der
+            // Bibliothek im APK (~50 MB Dex statt weniger MB).
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Bewusst der Debug-Schluessel: die App wird nicht im Play Store
+            // veroeffentlicht, und Internal App Sharing akzeptiert jeden Schluessel und
+            // signiert den Upload selbst neu. Fuer eine echte Veroeffentlichung muesste
+            // hier ein eigener Upload-Key stehen.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

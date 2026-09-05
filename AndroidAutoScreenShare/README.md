@@ -41,9 +41,16 @@ Daraus folgen ein paar harte Grenzen, die kein Code umgehen kann:
 
 ```bash
 cd AndroidAutoScreenShare
-./gradlew assembleDebug
-# Ergebnis: app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleDebug     # zum Testen mit der Desktop Head Unit
+./gradlew assembleRelease   # fuer Internal App Sharing, ca. 4 MB
 ```
+
+Der Release-Build ist mit dem Debug-Schlüssel signiert und damit direkt installierbar –
+Internal App Sharing akzeptiert jeden Schlüssel und signiert den Upload selbst neu. R8 ist
+dort aktiv und muss es bleiben: ohne die Verkleinerung landen sämtliche Icons aus
+`material-icons-extended` im APK (rund 50 MB Dex). Eigener Code und `androidx.car.app.**`
+sind per Keep-Regel von der Verschleierung ausgenommen – die Car App Library serialisiert
+ihre Model-Objekte reflektiv über Feldnamen.
 
 Alternativ den Ordner `AndroidAutoScreenShare` einfach in Android Studio öffnen.
 
@@ -82,7 +89,9 @@ Identitätsprüfung durchlaufen, das kann einige Tage dauern.
 
 **Am Rechner: APK hochladen**
 
-1. `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`
+1. `./gradlew assembleRelease` → `app/build/outputs/apk/release/app-release.apk`
+   (ca. 4 MB; der Debug-Build ist wegen `material-icons-extended` über 60 MB groß, weil
+   dort kein R8 läuft)
 2. Play Console öffnen → linkes Menü **Testen und freigeben → Interne App-Freigabe**
    (direkt: `play.google.com/console/internal-app-sharing`).
 3. **Hochladen** wählen, das APK auswählen, einen Versionsnamen vergeben.
