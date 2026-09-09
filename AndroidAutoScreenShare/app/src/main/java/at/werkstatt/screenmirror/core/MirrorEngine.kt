@@ -21,15 +21,16 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Haelt die beiden Enden der Spiegelung zusammen:
  *
- *  * die [MediaProjection] vom Handy (kommt aus dem [at.werkstatt.screenmirror.ProjectionService])
- *  * die Surface vom Autodisplay (kommt aus der Car App Session)
+ *  * die [MediaProjection] vom Handy (aus dem [at.werkstatt.screenmirror.ProjectionService])
+ *  * die Surface vom Autodisplay (aus der Car App Session)
  *
- * Sobald beide vorhanden sind, wird ein [VirtualDisplay] erzeugt, das den Handybildschirm
- * direkt in die Surface des Autos rendert. Faellt eines der beiden Enden weg, wird das
- * VirtualDisplay wieder freigegeben und auf der Autoflaeche ein Hinweistext gezeichnet.
+ * Sobald die Auto-Surface da ist, uebernimmt ein [CarSurfaceGlRenderer] deren Besitz und haelt
+ * ihn fuer die gesamte Lebensdauer. Der Renderer zeichnet den Handybildschirm
+ * seitenverhaeltnis-korrekt (FILL/FIT) bzw. im Warte-/Pausenzustand ein Schwarzbild. Nur wenn der
+ * GL-Renderer nicht startet, fallen wir auf die alte, formatfuellend-verzerrende Direktspiegelung
+ * plus Canvas-Platzhalter zurueck.
  *
- * Alle Zustandsaenderungen laufen ueber den Main-Thread, damit sich Surface-Besitz
- * (VirtualDisplay vs. lockCanvas) nicht ueberschneidet.
+ * Alle Zustandsaenderungen laufen ueber den Main-Thread.
  */
 object MirrorEngine {
 
@@ -38,19 +39,10 @@ object MirrorEngine {
     private const val DEFAULT_DPI = 160
 
     enum class Phase {
-        /** Weder Handy-Freigabe noch Auto verbunden. */
         IDLE,
-
-        /** Freigabe laeuft, aber Android Auto zeigt die App gerade nicht an. */
         WAITING_FOR_CAR,
-
-        /** Auto ist da, aber am Handy wurde die Freigabe noch nicht gestartet. */
         WAITING_FOR_PHONE,
-
-        /** Es wird gespiegelt. */
         MIRRORING,
-
-        /** Alles bereit, aber das Fahrzeug bewegt sich und die Sperre ist aktiv. */
         PAUSED_WHILE_DRIVING,
     }
 
@@ -75,7 +67,7 @@ object MirrorEngine {
     private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state.asStateFlow()
 
-    /** Wird gesetzt, wenn die Systemfreigabe von aussen beendet wurde (z.B. Stop-Button im Systemdialog). */
+    /** Wird gesetzt, wenn die Systemfreigabe von aussen beendet wurde (z.B. Stop im Systemdialog). */
     @Volatile
     var onProjectionEnded: (() -> Unit)? = null
 
@@ -90,8 +82,14 @@ object MirrorEngine {
     private var surfaceDpi = DEFAULT_DPI
     private var visibleArea: Rect? = null
 
-    private var virtualDisplay: VirtualDisplay? = null
+    // GL-Compositor besitzt die Auto-Surface fuer deren gesamte Lebensdauer (wenn verfuegbar).
     private var glRenderer: CarSurfaceGlRenderer? = null
+    private var glActive = false
+    private var sourceWidth = 0
+    private var sourceHeight = 0
+    private var sourceDpi = DEFAULT_DPI
+
+    private var virtualDisplay: VirtualDisplay? = null
     private var virtualDisplayWidth = 0
     private var virtualDisplayHeight = 0
 
@@ -146,18 +144,39 @@ object MirrorEngine {
     // ------------------------------------------------------------------ Auto-Seite
 
     fun onCarSurfaceAvailable(newSurface: Surface?, width: Int, height: Int, dpi: Int) = onMain {
-        // Der Host kann eine neue Surface liefern; das alte VirtualDisplay haelt sonst die alte fest.
-        releaseVirtualDisplay()
+        // Alten Zustand fuer diese (evtl. neue) Surface komplett abbauen.
+        releaseVirtualDisplayOnly()
+        releaseGlRenderer()
+
         surface = newSurface
         surfaceWidth = width
         surfaceHeight = height
         surfaceDpi = if (dpi > 0) dpi else DEFAULT_DPI
         Log.i(TAG, "Car-Surface verfuegbar: ${width}x$height @ ${surfaceDpi}dpi")
+
+        // GL-Renderer sofort erzeugen, damit die Surface NIE per lockCanvas belegt wird
+        // (sonst schlaegt eglCreateWindowSurface fehl und die Spiegelung bliebe schwarz).
+        if (newSurface != null && newSurface.isValid && width > 0 && height > 0) {
+            val (pw, ph, pdpi) = phoneDisplaySize()
+            sourceWidth = pw
+            sourceHeight = ph
+            sourceDpi = pdpi
+            val renderer = CarSurfaceGlRenderer(newSurface, width, height, pw, ph, scaleMode)
+            glRenderer = if (renderer.start()) {
+                renderer
+            } else {
+                renderer.release()
+                null
+            }
+            glActive = glRenderer != null
+            Log.i(TAG, "GL-Renderer aktiv=$glActive (Quelle ${pw}x$ph)")
+        }
         sync()
     }
 
     fun onCarSurfaceDestroyed() = onMain {
-        releaseVirtualDisplay()
+        releaseVirtualDisplayOnly()
+        releaseGlRenderer()
         surface = null
         surfaceWidth = 0
         surfaceHeight = 0
@@ -167,7 +186,8 @@ object MirrorEngine {
 
     fun onVisibleAreaChanged(area: Rect) = onMain {
         visibleArea = Rect(area)
-        if (virtualDisplay == null) drawPlaceholder()
+        // Nur im Fallback (ohne GL) zeichnen wir den Platzhalter per Canvas.
+        if (!glActive && virtualDisplay == null) drawPlaceholder()
     }
 
     /** Wird von der Geschwindigkeitssperre aufgerufen. */
@@ -193,43 +213,41 @@ object MirrorEngine {
         if (canMirror) {
             ensureVirtualDisplay(currentProjection!!, currentSurface!!)
         } else {
-            releaseVirtualDisplay()
-            drawPlaceholder()
+            releaseVirtualDisplayOnly()
+            if (glActive) glRenderer?.showBlack() else drawPlaceholder()
         }
         publish()
     }
 
     private fun ensureVirtualDisplay(mediaProjection: MediaProjection, target: Surface) {
-        // Laeuft bereits fuer genau diese Zielgroesse? Dann nichts tun.
         if (virtualDisplay != null && virtualDisplayWidth == surfaceWidth && virtualDisplayHeight == surfaceHeight) {
+            if (glActive) glRenderer?.showMirror()
             return
         }
-        // Groesse oder Surface hat sich geaendert -> sauber neu aufbauen.
-        releaseVirtualDisplay()
+        releaseVirtualDisplayOnly()
 
-        val (sourceW, sourceH, sourceDensity) = phoneDisplaySize()
-
-        // GL-Compositor rendert den Handyinhalt seitenverhaeltnis-korrekt auf die Autoflaeche.
-        // Faellt er aus, wird direkt (gestreckt) gespiegelt, damit ueberhaupt ein Bild ankommt.
-        val renderer = CarSurfaceGlRenderer(
-            outputSurface = target,
-            outputWidth = surfaceWidth,
-            outputHeight = surfaceHeight,
-            sourceWidth = sourceW,
-            sourceHeight = sourceH,
-            scaleMode = scaleMode,
-        )
-        val glReady = try {
-            renderer.start()
-        } catch (t: Throwable) {
-            Log.e(TAG, "GL-Renderer-Start fehlgeschlagen", t)
-            false
+        // Bei aktivem GL rendert das VirtualDisplay in die Zwischen-Surface (Handygroesse, 1:1),
+        // sonst direkt auf die Autoflaeche (formatfuellend/verzerrt - Fallback).
+        val vdSurface: Surface
+        val vdWidth: Int
+        val vdHeight: Int
+        val vdDensity: Int
+        if (glActive) {
+            val input = glRenderer?.inputSurface
+            if (input == null) {
+                Log.w(TAG, "GL-InputSurface fehlt trotz aktivem Renderer")
+                return
+            }
+            vdSurface = input
+            vdWidth = sourceWidth
+            vdHeight = sourceHeight
+            vdDensity = sourceDpi
+        } else {
+            vdSurface = target
+            vdWidth = surfaceWidth
+            vdHeight = surfaceHeight
+            vdDensity = surfaceDpi
         }
-
-        val vdSurface = (renderer.inputSurface.takeIf { glReady }) ?: target
-        val vdWidth = if (glReady) sourceW else surfaceWidth
-        val vdHeight = if (glReady) sourceH else surfaceHeight
-        val vdDensity = if (glReady) sourceDensity else surfaceDpi
 
         val display = try {
             mediaProjection.createVirtualDisplay(
@@ -245,22 +263,16 @@ object MirrorEngine {
         } catch (t: Throwable) {
             Log.e(TAG, "createVirtualDisplay fehlgeschlagen", t)
             null
-        }
-
-        if (display == null) {
-            renderer.release()
-            return
-        }
+        } ?: return
 
         virtualDisplay = display
-        glRenderer = renderer.takeIf { glReady }
-        if (!glReady) renderer.release()
         virtualDisplayWidth = surfaceWidth
         virtualDisplayHeight = surfaceHeight
-        Log.i(TAG, "Spiegelung gestartet (Auto ${surfaceWidth}x$surfaceHeight, Quelle ${sourceW}x$sourceH, GL=$glReady, Modus=$scaleMode)")
+        if (glActive) glRenderer?.showMirror()
+        Log.i(TAG, "Spiegelung gestartet (Auto ${surfaceWidth}x$surfaceHeight, Quelle ${vdWidth}x$vdHeight, GL=$glActive, Modus=$scaleMode)")
     }
 
-    private fun releaseVirtualDisplay() {
+    private fun releaseVirtualDisplayOnly() {
         virtualDisplay?.let {
             try {
                 it.surface = null
@@ -270,6 +282,11 @@ object MirrorEngine {
             }
         }
         virtualDisplay = null
+        virtualDisplayWidth = 0
+        virtualDisplayHeight = 0
+    }
+
+    private fun releaseGlRenderer() {
         glRenderer?.let {
             try {
                 it.release()
@@ -278,8 +295,26 @@ object MirrorEngine {
             }
         }
         glRenderer = null
-        virtualDisplayWidth = 0
-        virtualDisplayHeight = 0
+        glActive = false
+    }
+
+    private fun releaseProjection() {
+        val current = projection ?: return
+        releaseVirtualDisplayOnly()
+        projectionCallback?.let {
+            try {
+                current.unregisterCallback(it)
+            } catch (t: Throwable) {
+                Log.w(TAG, "unregisterCallback fehlgeschlagen", t)
+            }
+        }
+        try {
+            current.stop()
+        } catch (t: Throwable) {
+            Log.w(TAG, "MediaProjection.stop fehlgeschlagen", t)
+        }
+        projection = null
+        projectionCallback = null
     }
 
     /** Reale Groesse/Dichte des Handy-Standarddisplays; faellt notfalls auf die Autoflaeche zurueck. */
@@ -305,25 +340,6 @@ object MirrorEngine {
         return Triple(surfaceWidth.coerceAtLeast(1), surfaceHeight.coerceAtLeast(1), surfaceDpi)
     }
 
-    private fun releaseProjection() {
-        val current = projection ?: return
-        releaseVirtualDisplay()
-        projectionCallback?.let {
-            try {
-                current.unregisterCallback(it)
-            } catch (t: Throwable) {
-                Log.w(TAG, "unregisterCallback fehlgeschlagen", t)
-            }
-        }
-        try {
-            current.stop()
-        } catch (t: Throwable) {
-            Log.w(TAG, "MediaProjection.stop fehlgeschlagen", t)
-        }
-        projection = null
-        projectionCallback = null
-    }
-
     private fun publish() {
         val phase = when {
             virtualDisplay != null -> Phase.MIRRORING
@@ -340,14 +356,14 @@ object MirrorEngine {
         )
     }
 
-    /** Zeichnet den Hinweistext auf die Autoflaeche, solange nicht gespiegelt wird. */
+    /** Platzhaltertext per Canvas - nur im Fallback ohne GL. Mit GL besitzt der Renderer die Surface. */
     private fun drawPlaceholder() {
+        if (glActive) return
         val target = surface ?: return
         if (!target.isValid) return
         val canvas = try {
             target.lockCanvas(null)
         } catch (t: Throwable) {
-            // Direkt nach dem Freigeben eines VirtualDisplay kann das kurzzeitig fehlschlagen.
             Log.w(TAG, "lockCanvas nicht moeglich", t)
             null
         } ?: return

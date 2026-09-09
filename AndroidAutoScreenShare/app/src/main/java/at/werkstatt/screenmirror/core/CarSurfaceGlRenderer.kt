@@ -64,6 +64,10 @@ class CarSurfaceGlRenderer(
     private var hasFrame = false
     @Volatile private var released = false
 
+    /** BLACK = Warte-/Pausenzustand (schwarz), MIRROR = Handybild wird gezeichnet. */
+    enum class Mode { BLACK, MIRROR }
+    @Volatile private var mode = Mode.BLACK
+
     private val texCoords: FloatBuffer = floatBuffer(
         // s, t, 0, 1  (wird mit der SurfaceTexture-Transformationsmatrix multipliziert)
         floatArrayOf(
@@ -96,13 +100,38 @@ class CarSurfaceGlRenderer(
         return ok
     }
 
-    fun setScaleMode(mode: MirrorEngine.ScaleMode) {
-        scaleMode = mode
+    fun setScaleMode(newMode: MirrorEngine.ScaleMode) {
+        scaleMode = newMode
         if (released) return
         handler.post {
             updatePositions()
-            if (hasFrame) drawFrame(updateTexture = false)
+            if (mode == Mode.MIRROR && hasFrame) drawFrame(updateTexture = false)
         }
+    }
+
+    /** Handybild anzeigen (sobald Frames ueber [inputSurface] eintreffen). */
+    fun showMirror() {
+        if (released) return
+        handler.post {
+            mode = Mode.MIRROR
+            if (hasFrame) drawFrame(updateTexture = false) else clearBlack()
+        }
+    }
+
+    /** Schwarzbild anzeigen (Warten/Pause/Stopp) - haelt die Surface unter GL-Besitz. */
+    fun showBlack() {
+        if (released) return
+        handler.post {
+            mode = Mode.BLACK
+            clearBlack()
+        }
+    }
+
+    private fun clearBlack() {
+        GLES20.glViewport(0, 0, outputWidth, outputHeight)
+        GLES20.glClearColor(0f, 0f, 0f, 1f)
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+        EGL14.eglSwapBuffers(eglDisplay, eglSurface)
     }
 
     fun release() {
@@ -152,7 +181,13 @@ class CarSurfaceGlRenderer(
 
         val contextAttribs = intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE)
         eglContext = EGL14.eglCreateContext(eglDisplay, config, EGL14.EGL_NO_CONTEXT, contextAttribs, 0)
+        require(eglContext != EGL14.EGL_NO_CONTEXT) { "eglCreateContext fehlgeschlagen" }
         eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, config, outputSurface, intArrayOf(EGL14.EGL_NONE), 0)
+        // Wichtig: eglMakeCurrent kann mit EGL_NO_SURFACE "surfaceless" erfolgreich sein - dann
+        // ginge die Ausgabe ins Leere. Deshalb hier explizit auf eine echte Window-Surface pruefen.
+        require(eglSurface != null && eglSurface != EGL14.EGL_NO_SURFACE) {
+            "eglCreateWindowSurface lieferte EGL_NO_SURFACE (Surface evtl. schon anderweitig belegt)"
+        }
         require(EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) { "eglMakeCurrent fehlgeschlagen" }
 
         program = buildProgram()
@@ -190,6 +225,7 @@ class CarSurfaceGlRenderer(
         val st = surfaceTexture ?: return
         if (updateTexture) {
             try {
+                // Immer abholen, damit die Buffer-Queue nicht blockiert - auch im BLACK-Modus.
                 st.updateTexImage()
                 st.getTransformMatrix(texMatrix)
                 hasFrame = true
@@ -198,6 +234,8 @@ class CarSurfaceGlRenderer(
                 return
             }
         }
+        // Im Warte-/Pausenzustand wird das Handybild bewusst nicht gezeichnet.
+        if (mode != Mode.MIRROR) return
         if (!hasFrame) return
 
         GLES20.glViewport(0, 0, outputWidth, outputHeight)
