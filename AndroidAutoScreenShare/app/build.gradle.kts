@@ -1,24 +1,46 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
+// Upload-Keystore fuer Play App Signing - Datei und Passwoerter liegen ausserhalb der
+// Versionsverwaltung (keystore.properties + *.jks sind in .gitignore).
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) FileInputStream(keystorePropsFile).use { load(it) }
+}
+
 android {
     namespace = "at.werkstatt.screenmirror"
-    compileSdk = 35
+    compileSdk = 36
 
     // Sonst will AGP eine eigene build-tools-Version nachinstallieren. Auf Rechnern,
     // deren SDK unter Program Files liegt, scheitert das mangels Schreibrechten.
-    buildToolsVersion = "35.0.0"
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         applicationId = "at.werkstatt.screenmirror"
         // MediaProjection als Foreground-Service-Typ gibt es erst ab Android 10.
         minSdk = 29
-        targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        targetSdk = 36
+        versionCode = 5
+        versionName = "1.2"
+    }
+
+    signingConfigs {
+        // Nur anlegen, wenn der Key vorhanden ist (sonst faellt der Release-Build auf Debug zurueck).
+        if (keystorePropsFile.exists()) {
+            create("upload") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -32,11 +54,14 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Bewusst der Debug-Schluessel: die App wird nicht im Play Store
-            // veroeffentlicht, und Internal App Sharing akzeptiert jeden Schluessel und
-            // signiert den Upload selbst neu. Fuer eine echte Veroeffentlichung muesste
-            // hier ein eigener Upload-Key stehen.
-            signingConfig = signingConfigs.getByName("debug")
+            // Play App Signing (interner Test-Track) hat den Upload-Key aus keystore.properties
+            // registriert - damit muss jeder Upload signiert sein. Fehlt der Key beim Build
+            // (frischer Checkout), wird der Debug-Key genutzt, damit der Build durchlaeuft.
+            signingConfig = if (keystorePropsFile.exists()) {
+                signingConfigs.getByName("upload")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 

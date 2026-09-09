@@ -41,5 +41,10 @@
     <string name="car_status_waiting">Warten</string>
     <string name="car_toast_hint">Gesteuert wird am Handy – das Autodisplay zeigt nur an.</string>
 
+    <string name="car_mode_fill">Ansicht: Füllen</string>
+    <string name="car_mode_fit">Ansicht: Anpassen</string>
+    <string name="car_mode_fill_toast">Füllen – Bild füllt die Fläche (Ränder werden ggf. beschnitten)</string>
+    <string name="car_mode_fit_toast">Anpassen – ganzer Handybildschirm sichtbar (mit Rändern)</string>
+
     <string name="hints">Hinweise:\n• Die App muss per Sideload installiert und in den Entwicklereinstellungen von Android Auto unter „Unbekannte Quellen“ erlaubt werden.\n• Android Auto zeigt sie in der Kategorie „Navigation“ an.\n• Eingaben am Autodisplay werden nicht an das Handy weitergegeben.\n• Ablenkung am Steuer ist gefährlich und je nach Land verboten – nutze die Spiegelung nur im Stand oder für Beifahrer.</string>
 </resources>

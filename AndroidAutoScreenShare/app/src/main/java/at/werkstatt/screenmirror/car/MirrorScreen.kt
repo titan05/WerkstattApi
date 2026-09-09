@@ -64,7 +64,26 @@ class MirrorScreen(carContext: CarContext) : Screen(carContext), DefaultLifecycl
             else -> R.string.car_status_waiting
         }
 
+        val scaleMode = MirrorEngine.state.value.scaleMode
+        val scaleTitle = when (scaleMode) {
+            MirrorEngine.ScaleMode.FILL -> R.string.car_mode_fill
+            MirrorEngine.ScaleMode.FIT -> R.string.car_mode_fit
+        }
+
         val actionStrip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setTitle(carContext.getString(scaleTitle))
+                    .setOnClickListener {
+                        MirrorEngine.toggleScaleMode()
+                        val toast = when (MirrorEngine.state.value.scaleMode) {
+                            MirrorEngine.ScaleMode.FILL -> R.string.car_mode_fill_toast
+                            MirrorEngine.ScaleMode.FIT -> R.string.car_mode_fit_toast
+                        }
+                        CarToast.makeText(carContext, toast, CarToast.LENGTH_SHORT).show()
+                    }
+                    .build()
+            )
             .addAction(
                 Action.Builder()
                     .setTitle(carContext.getString(status))

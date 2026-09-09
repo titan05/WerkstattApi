@@ -14,9 +14,9 @@
     <!-- Optional: Geschwindigkeit fuer die "nur im Stand"-Sperre. -->
     <uses-permission android:name="com.google.android.gms.permission.CAR_SPEED" />
 
-    <uses-feature
-        android:name="android.hardware.type.automotive"
-        android:required="false" />
+    <!-- Android Auto (projected) app: NICHT die Automotive-OS-Hardwarefunktion
+         deklarieren - sonst lehnt Play den Upload ab (Konflikt mit dem
+         com.google.android.gms.car.application-Metadatum weiter unten). -->
     <uses-feature
         android:name="android.software.car.templates_host"
         android:required="false" />

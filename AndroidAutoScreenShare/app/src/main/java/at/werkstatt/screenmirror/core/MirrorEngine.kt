@@ -9,7 +9,9 @@ import android.hardware.display.VirtualDisplay
 import android.media.projection.MediaProjection
 import android.os.Handler
 import android.os.Looper
+import android.util.DisplayMetrics
 import android.util.Log
+import android.view.Display
 import android.view.Surface
 import at.werkstatt.screenmirror.R
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,10 +54,20 @@ object MirrorEngine {
         PAUSED_WHILE_DRIVING,
     }
 
+    /** Wie der Handyinhalt auf die (meist breitere) Autoflaeche gelegt wird. */
+    enum class ScaleMode {
+        /** Fuellt die Flaeche aus; ueberstehende Raender werden abgeschnitten. */
+        FILL,
+
+        /** Zeigt den ganzen Handybildschirm; laesst ggf. Raender frei. */
+        FIT,
+    }
+
     data class State(
         val phase: Phase = Phase.IDLE,
         val carSurfaceReady: Boolean = false,
         val projectionActive: Boolean = false,
+        val scaleMode: ScaleMode = ScaleMode.FILL,
     )
 
     private val main = Handler(Looper.getMainLooper())
@@ -79,14 +91,29 @@ object MirrorEngine {
     private var visibleArea: Rect? = null
 
     private var virtualDisplay: VirtualDisplay? = null
-    private var virtualDisplaySurface: Surface? = null
+    private var glRenderer: CarSurfaceGlRenderer? = null
     private var virtualDisplayWidth = 0
     private var virtualDisplayHeight = 0
 
     private var drivingPaused = false
 
+    @Volatile
+    private var scaleMode = ScaleMode.FILL
+
     fun attach(context: Context) {
-        if (appContext == null) appContext = context.applicationContext
+        if (appContext == null) {
+            appContext = context.applicationContext
+            scaleMode = Prefs.scaleMode(context)
+        }
+    }
+
+    /** Schaltet zwischen Fuellen und Einpassen um (Aktion in der Auto-Actionleiste). */
+    fun toggleScaleMode() = onMain {
+        scaleMode = if (scaleMode == ScaleMode.FILL) ScaleMode.FIT else ScaleMode.FILL
+        appContext?.let { Prefs.setScaleMode(it, scaleMode) }
+        glRenderer?.setScaleMode(scaleMode)
+        Log.i(TAG, "Skalierungsmodus: $scaleMode")
+        publish()
     }
 
     // ---------------------------------------------------------------- Handy-Seite
@@ -173,49 +200,64 @@ object MirrorEngine {
     }
 
     private fun ensureVirtualDisplay(mediaProjection: MediaProjection, target: Surface) {
-        val existing = virtualDisplay
-        if (existing == null) {
-            virtualDisplay = try {
-                mediaProjection.createVirtualDisplay(
-                    VIRTUAL_DISPLAY_NAME,
-                    surfaceWidth,
-                    surfaceHeight,
-                    surfaceDpi,
-                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                    target,
-                    null,
-                    main,
-                )
-            } catch (t: Throwable) {
-                Log.e(TAG, "createVirtualDisplay fehlgeschlagen", t)
-                null
-            }
-            if (virtualDisplay != null) {
-                virtualDisplaySurface = target
-                virtualDisplayWidth = surfaceWidth
-                virtualDisplayHeight = surfaceHeight
-                Log.i(TAG, "Spiegelung gestartet (${surfaceWidth}x$surfaceHeight)")
-            }
+        // Laeuft bereits fuer genau diese Zielgroesse? Dann nichts tun.
+        if (virtualDisplay != null && virtualDisplayWidth == surfaceWidth && virtualDisplayHeight == surfaceHeight) {
+            return
+        }
+        // Groesse oder Surface hat sich geaendert -> sauber neu aufbauen.
+        releaseVirtualDisplay()
+
+        val (sourceW, sourceH, sourceDensity) = phoneDisplaySize()
+
+        // GL-Compositor rendert den Handyinhalt seitenverhaeltnis-korrekt auf die Autoflaeche.
+        // Faellt er aus, wird direkt (gestreckt) gespiegelt, damit ueberhaupt ein Bild ankommt.
+        val renderer = CarSurfaceGlRenderer(
+            outputSurface = target,
+            outputWidth = surfaceWidth,
+            outputHeight = surfaceHeight,
+            sourceWidth = sourceW,
+            sourceHeight = sourceH,
+            scaleMode = scaleMode,
+        )
+        val glReady = try {
+            renderer.start()
+        } catch (t: Throwable) {
+            Log.e(TAG, "GL-Renderer-Start fehlgeschlagen", t)
+            false
+        }
+
+        val vdSurface = (renderer.inputSurface.takeIf { glReady }) ?: target
+        val vdWidth = if (glReady) sourceW else surfaceWidth
+        val vdHeight = if (glReady) sourceH else surfaceHeight
+        val vdDensity = if (glReady) sourceDensity else surfaceDpi
+
+        val display = try {
+            mediaProjection.createVirtualDisplay(
+                VIRTUAL_DISPLAY_NAME,
+                vdWidth,
+                vdHeight,
+                vdDensity,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                vdSurface,
+                null,
+                main,
+            )
+        } catch (t: Throwable) {
+            Log.e(TAG, "createVirtualDisplay fehlgeschlagen", t)
+            null
+        }
+
+        if (display == null) {
+            renderer.release()
             return
         }
 
-        if (virtualDisplayWidth != surfaceWidth || virtualDisplayHeight != surfaceHeight) {
-            try {
-                existing.resize(surfaceWidth, surfaceHeight, surfaceDpi)
-                virtualDisplayWidth = surfaceWidth
-                virtualDisplayHeight = surfaceHeight
-            } catch (t: Throwable) {
-                Log.w(TAG, "resize fehlgeschlagen", t)
-            }
-        }
-        if (virtualDisplaySurface !== target) {
-            try {
-                existing.surface = target
-                virtualDisplaySurface = target
-            } catch (t: Throwable) {
-                Log.w(TAG, "setSurface fehlgeschlagen", t)
-            }
-        }
+        virtualDisplay = display
+        glRenderer = renderer.takeIf { glReady }
+        if (!glReady) renderer.release()
+        virtualDisplayWidth = surfaceWidth
+        virtualDisplayHeight = surfaceHeight
+        Log.i(TAG, "Spiegelung gestartet (Auto ${surfaceWidth}x$surfaceHeight, Quelle ${sourceW}x$sourceH, GL=$glReady, Modus=$scaleMode)")
     }
 
     private fun releaseVirtualDisplay() {
@@ -228,9 +270,39 @@ object MirrorEngine {
             }
         }
         virtualDisplay = null
-        virtualDisplaySurface = null
+        glRenderer?.let {
+            try {
+                it.release()
+            } catch (t: Throwable) {
+                Log.w(TAG, "GL-Renderer konnte nicht sauber freigegeben werden", t)
+            }
+        }
+        glRenderer = null
         virtualDisplayWidth = 0
         virtualDisplayHeight = 0
+    }
+
+    /** Reale Groesse/Dichte des Handy-Standarddisplays; faellt notfalls auf die Autoflaeche zurueck. */
+    private fun phoneDisplaySize(): Triple<Int, Int, Int> {
+        val context = appContext
+        if (context != null) {
+            try {
+                val dm = context.getSystemService(DisplayManager::class.java)
+                val display = dm?.getDisplay(Display.DEFAULT_DISPLAY)
+                if (display != null) {
+                    val metrics = DisplayMetrics()
+                    @Suppress("DEPRECATION")
+                    display.getRealMetrics(metrics)
+                    if (metrics.widthPixels > 0 && metrics.heightPixels > 0) {
+                        val density = if (metrics.densityDpi > 0) metrics.densityDpi else surfaceDpi
+                        return Triple(metrics.widthPixels, metrics.heightPixels, density)
+                    }
+                }
+            } catch (t: Throwable) {
+                Log.w(TAG, "Handy-Displaygroesse nicht ermittelbar", t)
+            }
+        }
+        return Triple(surfaceWidth.coerceAtLeast(1), surfaceHeight.coerceAtLeast(1), surfaceDpi)
     }
 
     private fun releaseProjection() {
@@ -264,6 +336,7 @@ object MirrorEngine {
             phase = phase,
             carSurfaceReady = surface != null,
             projectionActive = projection != null,
+            scaleMode = scaleMode,
         )
     }
 
