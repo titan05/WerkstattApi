@@ -1,5 +1,6 @@
 package at.werkstatt.screenmirror
 
+import android.Manifest
 import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
@@ -8,7 +9,9 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.IBinder
 import android.util.Log
@@ -16,7 +19,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
+import at.werkstatt.screenmirror.core.MirrorAudioBridge
 import at.werkstatt.screenmirror.core.MirrorEngine
+import at.werkstatt.screenmirror.core.Prefs
 
 /**
  * Haelt die Bildschirmaufnahme am Leben.
@@ -25,6 +30,8 @@ import at.werkstatt.screenmirror.core.MirrorEngine
  * `mediaProjection` bereits laufen, bevor `getMediaProjection()` aufgerufen wird.
  */
 class ProjectionService : Service() {
+
+    private var audioBridge: MirrorAudioBridge? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -38,6 +45,7 @@ class ProjectionService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
+                stopAudioBridge()
                 MirrorEngine.onProjectionStopped()
                 stopSelf()
                 return START_NOT_STICKY
@@ -66,6 +74,7 @@ class ProjectionService : Service() {
                     return START_NOT_STICKY
                 }
                 MirrorEngine.onProjectionStarted(projection)
+                startAudioBridge(projection)
                 return START_NOT_STICKY
             }
 
@@ -78,8 +87,28 @@ class ProjectionService : Service() {
 
     override fun onDestroy() {
         MirrorEngine.onProjectionEnded = null
+        stopAudioBridge()
         MirrorEngine.onProjectionStopped()
         super.onDestroy()
+    }
+
+    /** Ton nur mitspiegeln, wenn gewuenscht UND RECORD_AUDIO erteilt ist. */
+    private fun audioEnabled(): Boolean =
+        Prefs.shareAudio(this) &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+
+    private fun startAudioBridge(projection: MediaProjection) {
+        if (!audioEnabled()) {
+            Log.i(TAG, "Audio-Bruecke aus (Einstellung/Berechtigung)")
+            return
+        }
+        audioBridge = MirrorAudioBridge(projection).also { it.start(useGuidanceChannel = true) }
+    }
+
+    private fun stopAudioBridge() {
+        audioBridge?.stop()
+        audioBridge = null
     }
 
     private fun startAsForeground() {
@@ -109,11 +138,18 @@ class ProjectionService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
+        // Nur wenn Audio wirklich mitlaeuft, den Mikrofon-Typ deklarieren - sonst wirft
+        // startForeground ab Android 14 (fehlende RECORD_AUDIO-Berechtigung fuer den Typ).
+        var type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+        if (audioEnabled()) {
+            type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        }
+
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
             notification,
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION,
+            type,
         )
     }
 

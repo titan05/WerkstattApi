@@ -7,6 +7,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Medienton mitspiegeln (AudioPlaybackCapture) - braucht RECORD_AUDIO und den
+         Foreground-Service-Typ "microphone". Ohne die Berechtigung laeuft die Spiegelung stumm. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
     <!-- Car App Library: Zeichenflaeche + Navigations-Templates. -->
     <uses-permission android:name="androidx.car.app.ACCESS_SURFACE" />
     <uses-permission android:name="androidx.car.app.NAVIGATION_TEMPLATES" />
@@ -65,7 +70,7 @@
         <service
             android:name=".ProjectionService"
             android:exported="false"
-            android:foregroundServiceType="mediaProjection" />
+            android:foregroundServiceType="mediaProjection|microphone" />
 
     </application>
 

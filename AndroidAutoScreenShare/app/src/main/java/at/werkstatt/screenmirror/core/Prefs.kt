@@ -9,6 +9,7 @@ object Prefs {
     private const val FILE = "car_screen_mirror"
     private const val KEY_PARKED_ONLY = "parked_only"
     private const val KEY_SCALE_MODE = "scale_mode"
+    private const val KEY_SHARE_AUDIO = "share_audio"
 
     /** Wenn aktiv, wird die Spiegelung pausiert, sobald sich das Fahrzeug bewegt. */
     fun parkedOnly(context: Context): Boolean =
@@ -28,6 +29,14 @@ object Prefs {
 
     fun setScaleMode(context: Context, mode: MirrorEngine.ScaleMode) {
         prefs(context).edit { putString(KEY_SCALE_MODE, mode.name) }
+    }
+
+    /** Ob der Medienton mitgespiegelt werden soll (experimentell); Standard an. */
+    fun shareAudio(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_SHARE_AUDIO, true)
+
+    fun setShareAudio(context: Context, value: Boolean) {
+        prefs(context).edit { putBoolean(KEY_SHARE_AUDIO, value) }
     }
 
     private fun prefs(context: Context) =

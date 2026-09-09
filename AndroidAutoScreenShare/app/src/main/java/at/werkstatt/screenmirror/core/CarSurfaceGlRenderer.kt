@@ -64,9 +64,26 @@ class CarSurfaceGlRenderer(
     private var hasFrame = false
     @Volatile private var released = false
 
-    /** BLACK = Warte-/Pausenzustand (schwarz), MIRROR = Handybild wird gezeichnet. */
+    /** BLACK = Warte-/Pausenzustand (animierter Farbverlauf), MIRROR = Handybild wird gezeichnet. */
     enum class Mode { BLACK, MIRROR }
     @Volatile private var mode = Mode.BLACK
+
+    // Animierter Leerlauf-Hintergrund (dezenter, driftender Farbverlauf), solange nicht gespiegelt wird.
+    private var gradientProgram = 0
+    private var gradPositionLoc = 0
+    private var gradResLoc = 0
+    private var gradTimeLoc = 0
+    private var startNanos = 0L
+    private val fullQuad: FloatBuffer = floatBuffer(
+        floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)
+    )
+    private val idleFrame = object : Runnable {
+        override fun run() {
+            if (released || mode != Mode.BLACK) return
+            drawIdle()
+            handler.postDelayed(this, 33L)
+        }
+    }
 
     private val texCoords: FloatBuffer = floatBuffer(
         // s, t, 0, 1  (wird mit der SurfaceTexture-Transformationsmatrix multipliziert)
@@ -114,16 +131,18 @@ class CarSurfaceGlRenderer(
         if (released) return
         handler.post {
             mode = Mode.MIRROR
+            handler.removeCallbacks(idleFrame)
             if (hasFrame) drawFrame(updateTexture = false) else clearBlack()
         }
     }
 
-    /** Schwarzbild anzeigen (Warten/Pause/Stopp) - haelt die Surface unter GL-Besitz. */
+    /** Animierten Leerlauf-Hintergrund anzeigen (Warten/Pause/Stopp) - haelt die Surface unter GL-Besitz. */
     fun showBlack() {
         if (released) return
         handler.post {
             mode = Mode.BLACK
-            clearBlack()
+            handler.removeCallbacks(idleFrame)
+            handler.post(idleFrame)
         }
     }
 
@@ -131,6 +150,30 @@ class CarSurfaceGlRenderer(
         GLES20.glViewport(0, 0, outputWidth, outputHeight)
         GLES20.glClearColor(0f, 0f, 0f, 1f)
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+        EGL14.eglSwapBuffers(eglDisplay, eglSurface)
+    }
+
+    /** Ein Frame des animierten Leerlauf-Hintergrunds. Faellt auf Schwarz zurueck, falls kein Programm. */
+    private fun drawIdle() {
+        if (released) return
+        if (gradientProgram == 0) {
+            clearBlack()
+            return
+        }
+        val time = (System.nanoTime() - startNanos) / 1_000_000_000f
+        GLES20.glViewport(0, 0, outputWidth, outputHeight)
+        GLES20.glClearColor(0f, 0f, 0f, 1f)
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+
+        GLES20.glUseProgram(gradientProgram)
+        fullQuad.position(0)
+        GLES20.glEnableVertexAttribArray(gradPositionLoc)
+        GLES20.glVertexAttribPointer(gradPositionLoc, 2, GLES20.GL_FLOAT, false, 0, fullQuad)
+        GLES20.glUniform2f(gradResLoc, outputWidth.toFloat(), outputHeight.toFloat())
+        GLES20.glUniform1f(gradTimeLoc, time)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glDisableVertexAttribArray(gradPositionLoc)
+
         EGL14.eglSwapBuffers(eglDisplay, eglSurface)
     }
 
@@ -142,6 +185,7 @@ class CarSurfaceGlRenderer(
         if (this::handler.isInitialized) {
             handler.post {
                 try {
+                    handler.removeCallbacks(idleFrame)
                     releaseGl()
                 } catch (t: Throwable) {
                     Log.w(TAG, "GL-Freigabe fehlgeschlagen", t)
@@ -190,10 +234,24 @@ class CarSurfaceGlRenderer(
         }
         require(EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) { "eglMakeCurrent fehlgeschlagen" }
 
-        program = buildProgram()
+        program = buildProgramFrom(VERTEX_SHADER, FRAGMENT_SHADER)
         aPositionLoc = GLES20.glGetAttribLocation(program, "aPosition")
         aTexCoordLoc = GLES20.glGetAttribLocation(program, "aTexCoord")
         uTexMatrixLoc = GLES20.glGetUniformLocation(program, "uTexMatrix")
+
+        // Optionaler Leerlauf-Farbverlauf; scheitert er, bleibt der Leerlauf einfach schwarz.
+        startNanos = System.nanoTime()
+        gradientProgram = try {
+            buildProgramFrom(GRADIENT_VERTEX_SHADER, GRADIENT_FRAGMENT_SHADER)
+        } catch (t: Throwable) {
+            Log.w(TAG, "Gradient-Programm nicht verfuegbar - Leerlauf bleibt schwarz", t)
+            0
+        }
+        if (gradientProgram != 0) {
+            gradPositionLoc = GLES20.glGetAttribLocation(gradientProgram, "aPosition")
+            gradResLoc = GLES20.glGetUniformLocation(gradientProgram, "uRes")
+            gradTimeLoc = GLES20.glGetUniformLocation(gradientProgram, "uTime")
+        }
 
         val textures = IntArray(1)
         GLES20.glGenTextures(1, textures, 0)
@@ -310,9 +368,9 @@ class CarSurfaceGlRenderer(
         eglDisplay = EGL14.EGL_NO_DISPLAY
     }
 
-    private fun buildProgram(): Int {
-        val vertex = compileShader(GLES20.GL_VERTEX_SHADER, VERTEX_SHADER)
-        val fragment = compileShader(GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER)
+    private fun buildProgramFrom(vertexSource: String, fragmentSource: String): Int {
+        val vertex = compileShader(GLES20.GL_VERTEX_SHADER, vertexSource)
+        val fragment = compileShader(GLES20.GL_FRAGMENT_SHADER, fragmentSource)
         val prog = GLES20.glCreateProgram()
         GLES20.glAttachShader(prog, vertex)
         GLES20.glAttachShader(prog, fragment)
@@ -362,6 +420,32 @@ class CarSurfaceGlRenderer(
             uniform samplerExternalOES sTexture;
             void main() {
                 gl_FragColor = texture2D(sTexture, vTexCoord);
+            }
+        """
+
+        private const val GRADIENT_VERTEX_SHADER = """
+            attribute vec2 aPosition;
+            void main() {
+                gl_Position = vec4(aPosition, 0.0, 1.0);
+            }
+        """
+
+        // Dezenter, langsam driftender dunkelblauer Verlauf mit weichem Leuchtpunkt.
+        private const val GRADIENT_FRAGMENT_SHADER = """
+            precision mediump float;
+            uniform vec2 uRes;
+            uniform float uTime;
+            void main() {
+                vec2 uv = gl_FragCoord.xy / uRes;
+                float t = uTime;
+                float w = 0.5 + 0.5 * sin((uv.x + uv.y) * 3.0 + t * 0.8);
+                vec3 c1 = vec3(0.02, 0.04, 0.10);
+                vec3 c2 = vec3(0.05, 0.11, 0.26);
+                vec3 col = mix(c1, c2, w);
+                vec2 p = vec2(0.5 + 0.28 * sin(t * 0.5), 0.5 + 0.18 * cos(t * 0.4));
+                float d = distance(uv, p);
+                col += vec3(0.10, 0.14, 0.22) * smoothstep(0.45, 0.0, d);
+                gl_FragColor = vec4(col, 1.0);
             }
         """
     }

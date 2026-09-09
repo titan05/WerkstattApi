@@ -91,9 +91,10 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    private val notificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            // Ohne Benachrichtigung laeuft der Service trotzdem - nur unsichtbar.
+    private val startupPermissions =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            // Ergebnis egal: ohne Benachrichtigung laeuft der Service trotzdem, ohne
+            // RECORD_AUDIO eben nur ohne Ton. In beiden Faellen weiter zur Freigabe.
             requestProjection()
         }
 
@@ -117,11 +118,20 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun onStartClicked() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        val needed = buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+            ) add(Manifest.permission.POST_NOTIFICATIONS)
+
+            // Fuer den Ton-Mitschnitt (AudioPlaybackCapture) noetig - nur anfragen, wenn gewuenscht.
+            if (Prefs.shareAudio(this@MainActivity) &&
+                ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) !=
+                PackageManager.PERMISSION_GRANTED
+            ) add(Manifest.permission.RECORD_AUDIO)
+        }
+        if (needed.isNotEmpty()) {
+            startupPermissions.launch(needed.toTypedArray())
             return
         }
         requestProjection()
@@ -218,6 +228,10 @@ private fun MirrorScreen(
             Spacer(Modifier.height(20.dp))
 
             ParkedOnlyCard()
+
+            Spacer(Modifier.height(20.dp))
+
+            ShareAudioCard()
 
             Spacer(Modifier.height(20.dp))
 
@@ -392,6 +406,47 @@ private fun ParkedOnlyCard() {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ShareAudioCard() {
+    val context = LocalContext.current
+    var shareAudio by remember { mutableStateOf(Prefs.shareAudio(context)) }
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        shape = MaterialTheme.shapes.extraLarge,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    stringResource(R.string.setting_share_audio),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Switch(
+                    checked = shareAudio,
+                    onCheckedChange = { checked ->
+                        shareAudio = checked
+                        Prefs.setShareAudio(context, checked)
+                    }
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.setting_share_audio_detail),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
