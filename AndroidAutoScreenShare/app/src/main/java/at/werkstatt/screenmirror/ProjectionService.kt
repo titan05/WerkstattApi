@@ -103,8 +103,9 @@ class ProjectionService : Service() {
             Log.i(TAG, "Audio-Bruecke aus (Einstellung/Berechtigung)")
             return
         }
-        val useGuidance = !Prefs.audioMediaChannel(this)
-        audioBridge = MirrorAudioBridge(projection).also { it.start(useGuidanceChannel = useGuidance) }
+        // Immer ueber den Navi-Ansage-Kanal: der Medienkanal-Weg wuerde nur den Bluetooth-Ton
+        // des Autos verdoppeln. Der Mitschnitt ist fuer Autos gedacht, die per BT keinen Ton liefern.
+        audioBridge = MirrorAudioBridge(projection).also { it.start(useGuidanceChannel = true) }
     }
 
     private fun stopAudioBridge() {

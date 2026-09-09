@@ -103,6 +103,7 @@ object MirrorEngine {
     fun attach(context: Context) {
         if (appContext == null) {
             appContext = context.applicationContext
+            Prefs.migrate(context)
             scaleMode = Prefs.scaleMode(context)
         }
     }

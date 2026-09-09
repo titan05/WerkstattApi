@@ -10,7 +10,7 @@ object Prefs {
     private const val KEY_PARKED_ONLY = "parked_only"
     private const val KEY_SCALE_MODE = "scale_mode"
     private const val KEY_SHARE_AUDIO = "share_audio"
-    private const val KEY_AUDIO_MEDIA_CHANNEL = "audio_media_channel"
+    private const val KEY_MIGRATED_AUDIO_DEFAULT = "migrated_audio_default_v10"
 
     /** Wenn aktiv, wird die Spiegelung pausiert, sobald sich das Fahrzeug bewegt. */
     fun parkedOnly(context: Context): Boolean =
@@ -32,20 +32,31 @@ object Prefs {
         prefs(context).edit { putString(KEY_SCALE_MODE, mode.name) }
     }
 
-    /** Ob der Medienton mitgespiegelt werden soll (experimentell); Standard an. */
+    /**
+     * Ob die App den Medienton mitschneiden und ueber den Navi-Ansage-Kanal ans Auto senden soll.
+     * Standard AUS: spielt das Auto den Ton schon selbst per Bluetooth ab, wuerde der Mitschnitt
+     * ihn doppeln. Nur einschalten, wenn ueber Bluetooth gar kein Ton kommt.
+     */
     fun shareAudio(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_SHARE_AUDIO, true)
+        prefs(context).getBoolean(KEY_SHARE_AUDIO, false)
 
     fun setShareAudio(context: Context, value: Boolean) {
         prefs(context).edit { putBoolean(KEY_SHARE_AUDIO, value) }
     }
 
-    /** true = Ton ueber normalen Medienkanal (Bluetooth), false = ueber Navi-Ansage-Kanal. Standard Medien. */
-    fun audioMediaChannel(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_AUDIO_MEDIA_CHANNEL, true)
-
-    fun setAudioMediaChannel(context: Context, value: Boolean) {
-        prefs(context).edit { putBoolean(KEY_AUDIO_MEDIA_CHANNEL, value) }
+    /**
+     * Einmalige Umstellung auf den neuen Standard: Ton-Mitschnitt aus. Wer zuvor die (damals
+     * standardmaessig aktive) Option anhatte, bekam sonst nach dem Update weiter doppelten Ton,
+     * weil das Auto den Bluetooth-Ton bereits selbst abspielt.
+     */
+    fun migrate(context: Context) {
+        val p = prefs(context)
+        if (!p.getBoolean(KEY_MIGRATED_AUDIO_DEFAULT, false)) {
+            p.edit {
+                putBoolean(KEY_SHARE_AUDIO, false)
+                putBoolean(KEY_MIGRATED_AUDIO_DEFAULT, true)
+            }
+        }
     }
 
     private fun prefs(context: Context) =
