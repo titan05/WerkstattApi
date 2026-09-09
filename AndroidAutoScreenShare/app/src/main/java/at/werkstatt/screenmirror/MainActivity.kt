@@ -414,6 +414,7 @@ private fun ParkedOnlyCard() {
 private fun ShareAudioCard() {
     val context = LocalContext.current
     var shareAudio by remember { mutableStateOf(Prefs.shareAudio(context)) }
+    var mediaChannel by remember { mutableStateOf(Prefs.audioMediaChannel(context)) }
 
     Card(
         colors = CardDefaults.cardColors(
@@ -447,6 +448,33 @@ private fun ShareAudioCard() {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (shareAudio) {
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        stringResource(R.string.setting_audio_media_channel),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Switch(
+                        checked = mediaChannel,
+                        onCheckedChange = { checked ->
+                            mediaChannel = checked
+                            Prefs.setAudioMediaChannel(context, checked)
+                        }
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.setting_audio_media_channel_detail),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

@@ -12,7 +12,9 @@
     <string name="setting_parked_only_caveat">Liefert das Fahrzeug keine Geschwindigkeit, greift die Sperre nicht — dann wird auch während der Fahrt gespiegelt.</string>
 
     <string name="setting_share_audio">Ton mit übertragen (experimentell)</string>
-    <string name="setting_share_audio_detail">Überträgt den Medienton übers Android-Auto-Ansagen-Signal an die Autolautsprecher. Wirkt beim nächsten Start der Freigabe. Manche Apps (z. B. Netflix) sperren den Mitschnitt.</string>
+    <string name="setting_share_audio_detail">Überträgt den Medienton an die Autolautsprecher. Wirkt beim nächsten Start der Freigabe. Manche Apps (z. B. Netflix) sperren den Mitschnitt.</string>
+    <string name="setting_audio_media_channel">Über Medienkanal (Bluetooth)</string>
+    <string name="setting_audio_media_channel_detail">An: normaler Medienton (z. B. über Bluetooth-A2DP). Aus: über den Navi-Ansage-Kanal von Android Auto.</string>
 
     <string name="status_idle">Nicht aktiv</string>
     <string name="status_idle_detail">Starte die Bildschirmfreigabe und öffne die App danach in Android Auto (Kategorie: Navigation).</string>

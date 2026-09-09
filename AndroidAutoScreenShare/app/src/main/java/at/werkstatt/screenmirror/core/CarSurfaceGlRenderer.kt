@@ -1,5 +1,6 @@
 package at.werkstatt.screenmirror.core
 
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.opengl.EGL14
 import android.opengl.EGLConfig
@@ -8,9 +9,11 @@ import android.opengl.EGLDisplay
 import android.opengl.EGLSurface
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
+import android.opengl.GLUtils
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
+import android.view.Choreographer
 import android.view.Surface
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -68,7 +71,7 @@ class CarSurfaceGlRenderer(
     enum class Mode { BLACK, MIRROR }
     @Volatile private var mode = Mode.BLACK
 
-    // Animierter Leerlauf-Hintergrund (dezenter, driftender Farbverlauf), solange nicht gespiegelt wird.
+    // Animierter RGB-Leerlauf-Hintergrund, solange nicht gespiegelt wird.
     private var gradientProgram = 0
     private var gradPositionLoc = 0
     private var gradResLoc = 0
@@ -77,11 +80,34 @@ class CarSurfaceGlRenderer(
     private val fullQuad: FloatBuffer = floatBuffer(
         floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)
     )
-    private val idleFrame = object : Runnable {
-        override fun run() {
+
+    // Textueberlagerung (Hinweistext) fuer den Leerlauf.
+    private var overlayProgram = 0
+    private var overlayPositionLoc = 0
+    private var overlayTexCoordLoc = 0
+    private var overlaySamplerLoc = 0
+    private var overlayTextureId = 0
+    @Volatile private var overlayReady = false
+    private val overlayQuad: FloatBuffer = floatBuffer(
+        floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)
+    )
+    // GLUtils laedt die Bitmap mit (0,0) oben-links -> V hier spiegeln.
+    private val overlayTexCoords: FloatBuffer = floatBuffer(
+        floatArrayOf(
+            0f, 1f,
+            1f, 1f,
+            0f, 0f,
+            1f, 0f,
+        )
+    )
+
+    // Leerlauf-Animation vsync-genau ueber den Choreographer (fluessig statt ruckelnd).
+    private val choreographer: Choreographer by lazy { Choreographer.getInstance() }
+    private val idleFrameCallback = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
             if (released || mode != Mode.BLACK) return
             drawIdle()
-            handler.postDelayed(this, 33L)
+            choreographer.postFrameCallback(this)
         }
     }
 
@@ -131,18 +157,39 @@ class CarSurfaceGlRenderer(
         if (released) return
         handler.post {
             mode = Mode.MIRROR
-            handler.removeCallbacks(idleFrame)
+            choreographer.removeFrameCallback(idleFrameCallback)
             if (hasFrame) drawFrame(updateTexture = false) else clearBlack()
         }
     }
 
-    /** Animierten Leerlauf-Hintergrund anzeigen (Warten/Pause/Stopp) - haelt die Surface unter GL-Besitz. */
+    /** Animierten RGB-Leerlauf anzeigen (Warten/Pause/Stopp) - haelt die Surface unter GL-Besitz. */
     fun showBlack() {
         if (released) return
         handler.post {
             mode = Mode.BLACK
-            handler.removeCallbacks(idleFrame)
-            handler.post(idleFrame)
+            choreographer.removeFrameCallback(idleFrameCallback)
+            choreographer.postFrameCallback(idleFrameCallback)
+        }
+    }
+
+    /** Setzt/aktualisiert die Hinweistext-Ueberlagerung fuer den Leerlauf (null = keine). */
+    fun setIdleOverlay(bitmap: Bitmap?) {
+        if (released) return
+        handler.post { uploadOverlay(bitmap) }
+    }
+
+    private fun uploadOverlay(bitmap: Bitmap?) {
+        if (overlayTextureId == 0 || bitmap == null || bitmap.isRecycled) {
+            overlayReady = false
+            return
+        }
+        try {
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, overlayTextureId)
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
+            overlayReady = true
+        } catch (t: Throwable) {
+            Log.w(TAG, "Overlay-Upload fehlgeschlagen", t)
+            overlayReady = false
         }
     }
 
@@ -153,26 +200,43 @@ class CarSurfaceGlRenderer(
         EGL14.eglSwapBuffers(eglDisplay, eglSurface)
     }
 
-    /** Ein Frame des animierten Leerlauf-Hintergrunds. Faellt auf Schwarz zurueck, falls kein Programm. */
+    /** Ein Frame des animierten RGB-Leerlaufs (Hintergrund + Hinweistext). */
     private fun drawIdle() {
         if (released) return
-        if (gradientProgram == 0) {
-            clearBlack()
-            return
-        }
-        val time = (System.nanoTime() - startNanos) / 1_000_000_000f
         GLES20.glViewport(0, 0, outputWidth, outputHeight)
         GLES20.glClearColor(0f, 0f, 0f, 1f)
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
-        GLES20.glUseProgram(gradientProgram)
-        fullQuad.position(0)
-        GLES20.glEnableVertexAttribArray(gradPositionLoc)
-        GLES20.glVertexAttribPointer(gradPositionLoc, 2, GLES20.GL_FLOAT, false, 0, fullQuad)
-        GLES20.glUniform2f(gradResLoc, outputWidth.toFloat(), outputHeight.toFloat())
-        GLES20.glUniform1f(gradTimeLoc, time)
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
-        GLES20.glDisableVertexAttribArray(gradPositionLoc)
+        if (gradientProgram != 0) {
+            val time = (System.nanoTime() - startNanos) / 1_000_000_000f
+            GLES20.glUseProgram(gradientProgram)
+            fullQuad.position(0)
+            GLES20.glEnableVertexAttribArray(gradPositionLoc)
+            GLES20.glVertexAttribPointer(gradPositionLoc, 2, GLES20.GL_FLOAT, false, 0, fullQuad)
+            GLES20.glUniform2f(gradResLoc, outputWidth.toFloat(), outputHeight.toFloat())
+            GLES20.glUniform1f(gradTimeLoc, time)
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+            GLES20.glDisableVertexAttribArray(gradPositionLoc)
+        }
+
+        if (overlayReady && overlayProgram != 0) {
+            GLES20.glEnable(GLES20.GL_BLEND)
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+            GLES20.glUseProgram(overlayProgram)
+            overlayQuad.position(0)
+            GLES20.glEnableVertexAttribArray(overlayPositionLoc)
+            GLES20.glVertexAttribPointer(overlayPositionLoc, 2, GLES20.GL_FLOAT, false, 0, overlayQuad)
+            overlayTexCoords.position(0)
+            GLES20.glEnableVertexAttribArray(overlayTexCoordLoc)
+            GLES20.glVertexAttribPointer(overlayTexCoordLoc, 2, GLES20.GL_FLOAT, false, 0, overlayTexCoords)
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, overlayTextureId)
+            GLES20.glUniform1i(overlaySamplerLoc, 0)
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+            GLES20.glDisableVertexAttribArray(overlayPositionLoc)
+            GLES20.glDisableVertexAttribArray(overlayTexCoordLoc)
+            GLES20.glDisable(GLES20.GL_BLEND)
+        }
 
         EGL14.eglSwapBuffers(eglDisplay, eglSurface)
     }
@@ -185,7 +249,7 @@ class CarSurfaceGlRenderer(
         if (this::handler.isInitialized) {
             handler.post {
                 try {
-                    handler.removeCallbacks(idleFrame)
+                    choreographer.removeFrameCallback(idleFrameCallback)
                     releaseGl()
                 } catch (t: Throwable) {
                     Log.w(TAG, "GL-Freigabe fehlgeschlagen", t)
@@ -251,6 +315,27 @@ class CarSurfaceGlRenderer(
             gradPositionLoc = GLES20.glGetAttribLocation(gradientProgram, "aPosition")
             gradResLoc = GLES20.glGetUniformLocation(gradientProgram, "uRes")
             gradTimeLoc = GLES20.glGetUniformLocation(gradientProgram, "uTime")
+        }
+
+        // Overlay-Programm + Textur fuer den Hinweistext (optional).
+        overlayProgram = try {
+            buildProgramFrom(OVERLAY_VERTEX_SHADER, OVERLAY_FRAGMENT_SHADER)
+        } catch (t: Throwable) {
+            Log.w(TAG, "Overlay-Programm nicht verfuegbar", t)
+            0
+        }
+        if (overlayProgram != 0) {
+            overlayPositionLoc = GLES20.glGetAttribLocation(overlayProgram, "aPosition")
+            overlayTexCoordLoc = GLES20.glGetAttribLocation(overlayProgram, "aTexCoord")
+            overlaySamplerLoc = GLES20.glGetUniformLocation(overlayProgram, "uTex")
+            val ot = IntArray(1)
+            GLES20.glGenTextures(1, ot, 0)
+            overlayTextureId = ot[0]
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, overlayTextureId)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
         }
 
         val textures = IntArray(1)
@@ -430,22 +515,46 @@ class CarSurfaceGlRenderer(
             }
         """
 
-        // Dezenter, langsam driftender dunkelblauer Verlauf mit weichem Leuchtpunkt.
+        // Fliessende RGB-Wellen (Regenbogen), sanft und mit Vignette, damit der Text lesbar bleibt.
         private const val GRADIENT_FRAGMENT_SHADER = """
             precision mediump float;
             uniform vec2 uRes;
             uniform float uTime;
+            vec3 hsv2rgb(vec3 c) {
+                vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+                vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+                return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+            }
             void main() {
                 vec2 uv = gl_FragCoord.xy / uRes;
-                float t = uTime;
-                float w = 0.5 + 0.5 * sin((uv.x + uv.y) * 3.0 + t * 0.8);
-                vec3 c1 = vec3(0.02, 0.04, 0.10);
-                vec3 c2 = vec3(0.05, 0.11, 0.26);
-                vec3 col = mix(c1, c2, w);
-                vec2 p = vec2(0.5 + 0.28 * sin(t * 0.5), 0.5 + 0.18 * cos(t * 0.4));
-                float d = distance(uv, p);
-                col += vec3(0.10, 0.14, 0.22) * smoothstep(0.45, 0.0, d);
+                float t = uTime * 0.12;
+                float wave = sin(uv.x * 3.0 + t * 3.0)
+                           + sin(uv.y * 4.0 - t * 2.0)
+                           + sin((uv.x + uv.y) * 3.5 + t * 2.5);
+                float hue = fract(wave * 0.12 + t);
+                vec3 col = hsv2rgb(vec3(hue, 0.7, 0.95));
+                float d = distance(uv, vec2(0.5));
+                col *= mix(1.0, 0.35, smoothstep(0.2, 0.95, d));
                 gl_FragColor = vec4(col, 1.0);
+            }
+        """
+
+        private const val OVERLAY_VERTEX_SHADER = """
+            attribute vec2 aPosition;
+            attribute vec2 aTexCoord;
+            varying vec2 vTexCoord;
+            void main() {
+                gl_Position = vec4(aPosition, 0.0, 1.0);
+                vTexCoord = aTexCoord;
+            }
+        """
+
+        private const val OVERLAY_FRAGMENT_SHADER = """
+            precision mediump float;
+            varying vec2 vTexCoord;
+            uniform sampler2D uTex;
+            void main() {
+                gl_FragColor = texture2D(uTex, vTexCoord);
             }
         """
     }

@@ -103,7 +103,8 @@ class ProjectionService : Service() {
             Log.i(TAG, "Audio-Bruecke aus (Einstellung/Berechtigung)")
             return
         }
-        audioBridge = MirrorAudioBridge(projection).also { it.start(useGuidanceChannel = true) }
+        val useGuidance = !Prefs.audioMediaChannel(this)
+        audioBridge = MirrorAudioBridge(projection).also { it.start(useGuidanceChannel = useGuidance) }
     }
 
     private fun stopAudioBridge() {

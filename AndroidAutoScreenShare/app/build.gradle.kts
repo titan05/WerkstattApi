@@ -27,8 +27,8 @@ android {
         // MediaProjection als Foreground-Service-Typ gibt es erst ab Android 10.
         minSdk = 29
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.4"
+        versionCode = 8
+        versionName = "1.5"
     }
 
     signingConfigs {

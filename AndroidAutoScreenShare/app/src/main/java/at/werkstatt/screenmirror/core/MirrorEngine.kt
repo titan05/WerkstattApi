@@ -1,6 +1,8 @@
 package at.werkstatt.screenmirror.core
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
@@ -214,7 +216,12 @@ object MirrorEngine {
             ensureVirtualDisplay(currentProjection!!, currentSurface!!)
         } else {
             releaseVirtualDisplayOnly()
-            if (glActive) glRenderer?.showBlack() else drawPlaceholder()
+            if (glActive) {
+                glRenderer?.setIdleOverlay(buildIdleOverlay())
+                glRenderer?.showBlack()
+            } else {
+                drawPlaceholder()
+            }
         }
         publish()
     }
@@ -404,6 +411,45 @@ object MirrorEngine {
         drivingPaused -> R.string.car_paused_title to R.string.car_paused_subtitle
         projection == null -> R.string.car_idle_title to R.string.car_idle_subtitle
         else -> R.string.car_connecting_title to R.string.car_connecting_subtitle
+    }
+
+    /** Baut die Hinweistext-Ueberlagerung (App-Name + Status) fuer den GL-Leerlauf. */
+    private fun buildIdleOverlay(): Bitmap? {
+        val context = appContext ?: return null
+        val w = surfaceWidth
+        val h = surfaceHeight
+        if (w <= 1 || h <= 1) return null
+        return try {
+            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bmp)
+            val scale = surfaceDpi / DEFAULT_DPI.toFloat()
+            val shadow = Color.argb(170, 0, 0, 0)
+
+            val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textAlign = Paint.Align.CENTER
+                textSize = 30f * scale
+                isFakeBoldText = true
+                setShadowLayer(8f, 0f, 2f, shadow)
+            }
+            val subtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.argb(235, 255, 255, 255)
+                textAlign = Paint.Align.CENTER
+                textSize = 17f * scale
+                setShadowLayer(6f, 0f, 2f, shadow)
+            }
+
+            val (titleRes, subtitleRes) = placeholderTexts()
+            val cx = w / 2f
+            val cy = h / 2f
+            canvas.drawText(context.getString(R.string.app_name), cx, cy - 20f * scale, titlePaint)
+            canvas.drawText(context.getString(titleRes), cx, cy + 18f * scale, subtitlePaint)
+            canvas.drawText(context.getString(subtitleRes), cx, cy + 44f * scale, subtitlePaint)
+            bmp
+        } catch (t: Throwable) {
+            Log.w(TAG, "Overlay-Bitmap fehlgeschlagen", t)
+            null
+        }
     }
 
     private fun onMain(block: () -> Unit) {
