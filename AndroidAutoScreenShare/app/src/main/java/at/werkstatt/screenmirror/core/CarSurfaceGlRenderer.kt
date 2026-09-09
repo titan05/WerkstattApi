@@ -515,26 +515,61 @@ class CarSurfaceGlRenderer(
             }
         """
 
-        // Fliessende RGB-Wellen (Regenbogen), sanft und mit Vignette, damit der Text lesbar bleibt.
+        // Sternenhimmel: ruhiger, sehr langsam driftender Nebel + dichtes, durchgehend
+        // sichtbares Sternenfeld; einzelne Sterne blitzen zufaellig immer wieder hell auf.
         private const val GRADIENT_FRAGMENT_SHADER = """
-            precision mediump float;
+            precision highp float;
             uniform vec2 uRes;
             uniform float uTime;
-            vec3 hsv2rgb(vec3 c) {
-                vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-                vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-                return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+            float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+            float noise(vec2 p){
+                vec2 i = floor(p), f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                float a = hash(i), b = hash(i + vec2(1.0, 0.0));
+                float c = hash(i + vec2(0.0, 1.0)), d = hash(i + vec2(1.0, 1.0));
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+            }
+            float fbm(vec2 p){
+                float v = 0.0, a = 0.5;
+                for (int i = 0; i < 5; i++){ v += a * noise(p); p *= 2.03; a *= 0.5; }
+                return v;
+            }
+            // Ein Stern je Rasterzelle. Immer sichtbar (Grundhelligkeit + leichtes Flimmern);
+            // einzelne blitzen zufaellig kurz hell auf (glint), je Stern anders getaktet.
+            float stars(vec2 sv, float density, float seed, float thresh){
+                vec2 g = sv * density;
+                vec2 cell = floor(g);
+                vec2 f = fract(g);
+                if (hash(cell + seed) < thresh) return 0.0;
+                vec2 pos = vec2(hash(cell + seed + 1.3), hash(cell + seed + 2.7));
+                float d = length(f - pos);
+                float size = mix(0.010, 0.045, hash(cell + seed + 4.1));
+                float core = smoothstep(size, 0.0, d);
+                float bright = mix(0.40, 1.0, hash(cell + seed + 3.3));
+                float speed = mix(0.4, 2.0, hash(cell + seed + 5.5));
+                float phase = hash(cell + seed + 6.9) * 6.2831;
+                float shimmer = 0.12 * sin(uTime * speed + phase);
+                float gsp = mix(0.20, 0.8, hash(cell + seed + 9.4));
+                float gph = hash(cell + seed + 8.2) * 6.2831;
+                float glint = pow(max(0.0, sin(uTime * gsp + gph)), 44.0);
+                return core * bright * (0.85 + shimmer + glint * 1.8);
             }
             void main() {
                 vec2 uv = gl_FragCoord.xy / uRes;
-                float t = uTime * 0.12;
-                float wave = sin(uv.x * 3.0 + t * 3.0)
-                           + sin(uv.y * 4.0 - t * 2.0)
-                           + sin((uv.x + uv.y) * 3.5 + t * 2.5);
-                float hue = fract(wave * 0.12 + t);
-                vec3 col = hsv2rgb(vec3(hue, 0.7, 0.95));
-                float d = distance(uv, vec2(0.5));
-                col *= mix(1.0, 0.35, smoothstep(0.2, 0.95, d));
+                float aspect = uRes.x / uRes.y;
+                vec2 sv = vec2(uv.x * aspect, uv.y);
+                float t = uTime * 0.010;
+                float n = fbm(sv * 2.0 + vec2(t, t * 0.5));
+                float n2 = fbm(sv * 3.2 - vec2(t * 0.6, t * 0.4));
+                vec3 col = vec3(0.006, 0.008, 0.024);
+                col += mix(vec3(0.03, 0.02, 0.10), vec3(0.06, 0.05, 0.20), n) * 0.65;
+                col += vec3(0.18, 0.06, 0.24) * smoothstep(0.64, 1.0, n2) * 0.45;
+                col += vec3(0.0, 0.07, 0.15) * smoothstep(0.62, 1.0, n) * 0.30;
+                float s = 0.0;
+                s += stars(sv, 48.0, 37.0, 0.70);
+                s += stars(sv, 30.0, 11.0, 0.55);
+                s += stars(sv, 15.0, 71.0, 0.86) * 1.4;
+                col += vec3(0.92, 0.95, 1.0) * s;
                 gl_FragColor = vec4(col, 1.0);
             }
         """
