@@ -11,6 +11,15 @@ object Prefs {
     private const val KEY_SCALE_MODE = "scale_mode"
     private const val KEY_SHARE_AUDIO = "share_audio"
     private const val KEY_MIGRATED_AUDIO_DEFAULT = "migrated_audio_default_v10"
+    private const val KEY_VIDEO_DELAY = "video_delay_ms"
+
+    /** A/V-Sync: Bild-Versatz in ms gegen Ton-Verspaetung (z.B. Bluetooth). 0 = aus. */
+    fun videoDelayMs(context: Context): Int =
+        prefs(context).getInt(KEY_VIDEO_DELAY, 0).coerceIn(0, 300)
+
+    fun setVideoDelayMs(context: Context, ms: Int) {
+        prefs(context).edit { putInt(KEY_VIDEO_DELAY, ms.coerceIn(0, 300)) }
+    }
 
     /** Wenn aktiv, wird die Spiegelung pausiert, sobald sich das Fahrzeug bewegt. */
     fun parkedOnly(context: Context): Boolean =

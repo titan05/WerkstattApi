@@ -51,6 +51,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -235,6 +236,10 @@ private fun MirrorScreen(
 
             Spacer(Modifier.height(20.dp))
 
+            SyncCard()
+
+            Spacer(Modifier.height(20.dp))
+
             Text(
                 stringResource(R.string.hints),
                 style = MaterialTheme.typography.bodySmall,
@@ -406,6 +411,42 @@ private fun ParkedOnlyCard() {
                     )
                 }
             }
+        }
+    }
+}
+
+/** A/V-Sync: Bild verzoegern, bis es zum (oft per BT verspaeteten) Ton passt. */
+@Composable
+private fun SyncCard() {
+    val context = LocalContext.current
+    var ms by remember { mutableStateOf(Prefs.videoDelayMs(context).toFloat()) }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        shape = MaterialTheme.shapes.extraLarge,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Ton-Sync (Bild verzögern)", style = MaterialTheme.typography.titleMedium)
+                Text("${ms.toInt()} ms", style = MaterialTheme.typography.titleMedium)
+            }
+            Slider(
+                value = ms,
+                onValueChange = { ms = it },
+                onValueChangeFinished = { MirrorEngine.setVideoSyncDelay(ms.toInt()) },
+                valueRange = 0f..300f,
+                steps = 11,
+            )
+            Text(
+                "Kommt der Ton (z. B. über Bluetooth) zu spät, schiebe hoch, bis Bild und Ton zusammenpassen. Typisch 100–250 ms. 0 = aus.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

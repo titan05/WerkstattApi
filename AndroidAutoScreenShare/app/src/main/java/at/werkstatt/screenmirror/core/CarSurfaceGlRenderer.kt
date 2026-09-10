@@ -101,12 +101,37 @@ class CarSurfaceGlRenderer(
         )
     )
 
+    // A/V-Sync: Bild um einen einstellbaren Versatz verzoegern (gegen Ton-Verspaetung, z.B. BT).
+    // Frames werden dazu in einen Ring aus FBO-Texturen kopiert und um videoDelayNanos spaeter gezeigt.
+    @Volatile private var videoDelayNanos = 0L
+    private val ringTex = IntArray(RING)
+    private val ringFbo = IntArray(RING)
+    private val ringTime = LongArray(RING)
+    private val ringValid = BooleanArray(RING)
+    private var ringWrite = 0
+    private var ringReady = false
+    private val presentQuad: FloatBuffer = floatBuffer(
+        floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)
+    )
+    private val presentTexCoords: FloatBuffer = floatBuffer(
+        floatArrayOf(0f, 0f, 1f, 0f, 0f, 1f, 1f, 1f)
+    )
+
     // Leerlauf-Animation vsync-genau ueber den Choreographer (fluessig statt ruckelnd).
     private val choreographer: Choreographer by lazy { Choreographer.getInstance() }
     private val idleFrameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (released || mode != Mode.BLACK) return
             drawIdle()
+            choreographer.postFrameCallback(this)
+        }
+    }
+
+    // Praesentiert bei aktivem Versatz laufend den passend "alten" Frame aus dem Ring.
+    private val mirrorFrameCallback = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (released || mode != Mode.MIRROR || videoDelayNanos <= 0L) return
+            presentDelayed()
             choreographer.postFrameCallback(this)
         }
     }
@@ -158,7 +183,36 @@ class CarSurfaceGlRenderer(
         handler.post {
             mode = Mode.MIRROR
             choreographer.removeFrameCallback(idleFrameCallback)
-            if (hasFrame) drawFrame(updateTexture = false) else clearBlack()
+            if (videoDelayNanos > 0L) {
+                choreographer.removeFrameCallback(mirrorFrameCallback)
+                choreographer.postFrameCallback(mirrorFrameCallback)
+            } else if (hasFrame) {
+                drawFrame(updateTexture = false)
+            } else {
+                clearBlack()
+            }
+        }
+    }
+
+    /** A/V-Sync: Bild-Versatz in Millisekunden setzen (0 = aus). */
+    fun setVideoDelayMs(ms: Long) {
+        if (released) return
+        handler.post {
+            val ns = (ms.coerceIn(0L, 300L)) * 1_000_000L
+            videoDelayNanos = ns
+            if (ns > 0L) {
+                for (i in 0 until RING) ringValid[i] = false
+                ringReady = false
+                if (mode == Mode.MIRROR) {
+                    choreographer.removeFrameCallback(mirrorFrameCallback)
+                    choreographer.postFrameCallback(mirrorFrameCallback)
+                }
+            } else {
+                choreographer.removeFrameCallback(mirrorFrameCallback)
+                for (i in 0 until RING) ringValid[i] = false
+                ringReady = false
+                if (mode == Mode.MIRROR && hasFrame) drawFrame(updateTexture = false)
+            }
         }
     }
 
@@ -167,6 +221,7 @@ class CarSurfaceGlRenderer(
         if (released) return
         handler.post {
             mode = Mode.BLACK
+            choreographer.removeFrameCallback(mirrorFrameCallback)
             choreographer.removeFrameCallback(idleFrameCallback)
             choreographer.postFrameCallback(idleFrameCallback)
         }
@@ -250,6 +305,7 @@ class CarSurfaceGlRenderer(
             handler.post {
                 try {
                     choreographer.removeFrameCallback(idleFrameCallback)
+                    choreographer.removeFrameCallback(mirrorFrameCallback)
                     releaseGl()
                 } catch (t: Throwable) {
                     Log.w(TAG, "GL-Freigabe fehlgeschlagen", t)
@@ -350,11 +406,14 @@ class CarSurfaceGlRenderer(
         val st = SurfaceTexture(textureId)
         st.setDefaultBufferSize(sourceWidth.coerceAtLeast(1), sourceHeight.coerceAtLeast(1))
         st.setOnFrameAvailableListener({
-            if (!released) handler.post { drawFrame(updateTexture = true) }
+            if (!released) handler.post {
+                if (videoDelayNanos > 0L) captureFrame() else drawFrame(updateTexture = true)
+            }
         }, handler)
         surfaceTexture = st
         inputSurface = Surface(st)
 
+        setupRing()
         updatePositions()
 
         // Erste (leere) Ausgabe schwarz, damit keine alten Pixel stehen bleiben.
@@ -404,6 +463,102 @@ class CarSurfaceGlRenderer(
 
         GLES20.glDisableVertexAttribArray(aPositionLoc)
         GLES20.glDisableVertexAttribArray(aTexCoordLoc)
+
+        EGL14.eglSwapBuffers(eglDisplay, eglSurface)
+    }
+
+    /** FBO-Ring anlegen (Texturen in Ausgabegroesse) fuer den Bild-Versatz. */
+    private fun setupRing() {
+        GLES20.glGenTextures(RING, ringTex, 0)
+        GLES20.glGenFramebuffers(RING, ringFbo, 0)
+        for (i in 0 until RING) {
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, ringTex[i])
+            GLES20.glTexImage2D(
+                GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, outputWidth, outputHeight, 0,
+                GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null,
+            )
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, ringFbo[i])
+            GLES20.glFramebufferTexture2D(
+                GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, ringTex[i], 0,
+            )
+            ringValid[i] = false
+        }
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
+    }
+
+    /** Aktuellen OES-Frame in die naechste Ring-FBO-Textur kopieren (seitenverhaeltnis-korrekt). */
+    private fun captureFrame() {
+        if (released) return
+        val st = surfaceTexture ?: return
+        try {
+            st.updateTexImage()
+            st.getTransformMatrix(texMatrix)
+            hasFrame = true
+        } catch (t: Throwable) {
+            Log.w(TAG, "updateTexImage (capture) fehlgeschlagen", t)
+            return
+        }
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, ringFbo[ringWrite])
+        GLES20.glViewport(0, 0, outputWidth, outputHeight)
+        GLES20.glClearColor(0f, 0f, 0f, 1f)
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+        GLES20.glUseProgram(program)
+        positions.position(0)
+        GLES20.glEnableVertexAttribArray(aPositionLoc)
+        GLES20.glVertexAttribPointer(aPositionLoc, 4, GLES20.GL_FLOAT, false, 0, positions)
+        texCoords.position(0)
+        GLES20.glEnableVertexAttribArray(aTexCoordLoc)
+        GLES20.glVertexAttribPointer(aTexCoordLoc, 4, GLES20.GL_FLOAT, false, 0, texCoords)
+        GLES20.glUniformMatrix4fv(uTexMatrixLoc, 1, false, texMatrix, 0)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glDisableVertexAttribArray(aPositionLoc)
+        GLES20.glDisableVertexAttribArray(aTexCoordLoc)
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
+
+        ringTime[ringWrite] = System.nanoTime()
+        ringValid[ringWrite] = true
+        ringWrite = (ringWrite + 1) % RING
+        ringReady = true
+    }
+
+    /** Den zum Versatz passenden "alten" Frame aus dem Ring auf die Auto-Surface zeichnen. */
+    private fun presentDelayed() {
+        if (released || !ringReady) return
+        val target = System.nanoTime() - videoDelayNanos
+        var bestIdx = -1
+        var bestTime = Long.MIN_VALUE
+        var oldestIdx = -1
+        var oldestTime = Long.MAX_VALUE
+        for (i in 0 until RING) {
+            if (!ringValid[i]) continue
+            if (ringTime[i] in (bestTime + 1)..target) { bestTime = ringTime[i]; bestIdx = i }
+            if (ringTime[i] < oldestTime) { oldestTime = ringTime[i]; oldestIdx = i }
+        }
+        val idx = if (bestIdx >= 0) bestIdx else oldestIdx
+        if (idx < 0) return
+
+        GLES20.glViewport(0, 0, outputWidth, outputHeight)
+        GLES20.glClearColor(0f, 0f, 0f, 1f)
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+        GLES20.glUseProgram(overlayProgram)
+        presentQuad.position(0)
+        GLES20.glEnableVertexAttribArray(overlayPositionLoc)
+        GLES20.glVertexAttribPointer(overlayPositionLoc, 2, GLES20.GL_FLOAT, false, 0, presentQuad)
+        presentTexCoords.position(0)
+        GLES20.glEnableVertexAttribArray(overlayTexCoordLoc)
+        GLES20.glVertexAttribPointer(overlayTexCoordLoc, 2, GLES20.GL_FLOAT, false, 0, presentTexCoords)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, ringTex[idx])
+        GLES20.glUniform1i(overlaySamplerLoc, 0)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glDisableVertexAttribArray(overlayPositionLoc)
+        GLES20.glDisableVertexAttribArray(overlayTexCoordLoc)
 
         EGL14.eglSwapBuffers(eglDisplay, eglSurface)
     }
@@ -486,6 +641,7 @@ class CarSurfaceGlRenderer(
 
     companion object {
         private const val TAG = "CarMirrorGl"
+        private const val RING = 12 // gepufferte Frames fuer den Bild-Versatz (Speicher begrenzen)
 
         private const val VERTEX_SHADER = """
             attribute vec4 aPosition;

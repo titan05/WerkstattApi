@@ -100,13 +100,26 @@ object MirrorEngine {
     @Volatile
     private var scaleMode = ScaleMode.FILL
 
+    @Volatile
+    private var videoDelayMs = 0
+
     fun attach(context: Context) {
         if (appContext == null) {
             appContext = context.applicationContext
             Prefs.migrate(context)
             scaleMode = Prefs.scaleMode(context)
+            videoDelayMs = Prefs.videoDelayMs(context)
         }
     }
+
+    /** A/V-Sync: Bild-Versatz gegen Ton-Verspaetung (ms). Gespeichert und sofort angewandt. */
+    fun setVideoSyncDelay(ms: Int) = onMain {
+        videoDelayMs = ms.coerceIn(0, 300)
+        appContext?.let { Prefs.setVideoDelayMs(it, videoDelayMs) }
+        glRenderer?.setVideoDelayMs(videoDelayMs.toLong())
+    }
+
+    fun videoSyncDelay(): Int = videoDelayMs
 
     /** Schaltet zwischen Fuellen und Einpassen um (Aktion in der Auto-Actionleiste). */
     fun toggleScaleMode() = onMain {
@@ -172,6 +185,7 @@ object MirrorEngine {
                 null
             }
             glActive = glRenderer != null
+            glRenderer?.setVideoDelayMs(videoDelayMs.toLong())
             Log.i(TAG, "GL-Renderer aktiv=$glActive (Quelle ${pw}x$ph)")
         }
         sync()
